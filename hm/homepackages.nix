@@ -17,6 +17,7 @@ home.packages = with pkgs; [
     trivy
     qt5.full
     qtcreator
+    whois
     zap
   ];
 }
