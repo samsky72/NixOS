@@ -60,7 +60,6 @@
       smartmontools
       smtube
       smplayer
-      spaceFM
       spotify
       qbittorrent
       qt5ct
