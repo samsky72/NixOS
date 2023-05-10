@@ -1,6 +1,7 @@
 # My packages.
 { config, pkgs, ...}: {
 home.packages = with pkgs; [
+    aircrack-ng
     citrix_workspace
     gcc
     john
