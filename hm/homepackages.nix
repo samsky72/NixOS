@@ -11,6 +11,7 @@ home.packages = with pkgs; [
     nmap
     nmapsi4
     nur.repos.xddxdd.svp
+    okteta
     rarcrack
     rnix-lsp
     sn0int
