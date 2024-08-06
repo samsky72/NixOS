@@ -1,19 +1,22 @@
 # Multimedia configurations.
 { config, pkgs, ... }: {
-   imports = [
-     ../packages/mpv.nix
-   ];
+  imports = [
+    ../packages/mpv.nix                                   # Use overrided mpv.
+  ];
 
-   environment.systemPackages = with pkgs; [
-     djvulibre
-     smplayer
-     spotify
-   ];
+  # Add some multimedia softwares.
+  environment.systemPackages = with pkgs; [
+    djvulibre                                             # DJVULibre - Libraries for djvu support.
+    smplayer                                              # SMPlayer - QT frontend for mpv.
+    spotify                                               # Spotify - Audio player.
+  ];
 
-   security.rtkit.enable =true;
+  # Enable rtkit for pipewire.
+  security.rtkit.enable =true;
 
-   services.pipewire = {
+  # Use pipewire as sound server.
+  services.pipewire = {
      enable = true;
-     pulse.enable = true;
-   };
+     pulse.enable = true;                                 # Enable pulseaudio support.
+  };
 }

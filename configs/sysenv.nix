@@ -34,19 +34,19 @@
 
   # Define SUID programs.
   programs = {
-    adb.enable = true;
-    bash = {
+    adb.enable = true;                                      # ADB - Android Debug bridge support.
+    bash = {                                                # Bash - Bash terminal configuration.
       completion.enable = true;
       interactiveShellInit = shellInit;
       inherit shellAliases;
     };
-    firefox.enable = true;
-    htop.enable = true;
-    wireshark = {
+    firefox.enable = true;                                  # Firefox - Web browser.
+    htop.enable = true;                                     # HTop - CLI process status viewer.
+    wireshark = {                                           # Wireshark - Network sniffer.
       enable = true;
       package = pkgs.wireshark-qt;
     };
-    zsh = { 
+    zsh = {                                                 # Zsh - Zsh terminal configuration.
       enable = true;
       interactiveShellInit = shellInit;
       inherit shellAliases;

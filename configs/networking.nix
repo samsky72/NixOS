@@ -14,10 +14,10 @@
     # Firewall configurations. 
     firewall = {
       allowedTCPPorts = [
-        80
-        443
-        5222
-        8118
+        80                                # Open HTTP.
+        443                               # Open HTTPS.
+        5222                              # Open WhatsApp.
+        8118                              # Open Privoxy.
       ];
       enable = true;
     };
@@ -26,11 +26,16 @@
     networkmanager.enable = true;    
   };
 
+  # Network related services.
   services = {
+
+    # Privoxy support.
     privoxy = {
       enable = true;
       enableTor = true;
     };
+
+    # TOR support.
     tor = {
       client.enable = true;
       enable = true;

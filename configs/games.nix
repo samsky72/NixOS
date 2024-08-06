@@ -1,11 +1,15 @@
 # Some gaming configurations.
 { config, pkgs, ... }: {
 
-   environment.systemPackages = with pkgs; [
-     mangohud
-   ];
+  # Some game=ing related softwares.
+  environment.systemPackages = with pkgs; [
+    mangohud                                              # Real-time game statistics (FPS, CPU/GPU loading statistics, etc.)
+  ];
    
-   hardware.graphics.enable32Bit = true;
-   programs.steam.enable = true;
+  # Add 32 bit graphical libraries.
+  hardware.graphics.enable32Bit = true;
+
+  # Enable steam.
+  programs.steam.enable = true;
 }
 

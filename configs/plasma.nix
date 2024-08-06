@@ -5,15 +5,15 @@
   environment = {
     plasma6.excludePackages = with pkgs.kdePackages; [ krdp ];
     systemPackages = with pkgs.kdePackages; [
-      ark                                                  # Archiver.
-      dolphin                                              # File manager.
-      gwenview                                             # Photo viewer.
-      kate                                                 # Editor.
-      kcalc                                                # Calculator.
-      krdc                                                 # Remode desktop client.
-      konsole                                              # Terminal.
-      okular                                               # Document viewer.
-      spectacle                                            # Screenshot creator.
+      ark                                                  # Ark - Archiver.
+      dolphin                                              # Dolphin - File manager.
+      gwenview                                             # Gwenview - Photo viewer.
+      kate                                                 # Kate - Text editor.
+      kcalc                                                # KCalc - Calculator.
+      krdc                                                 # KRDC - Remode desktop client.
+      konsole                                              # Konsole - Terminal.
+      okular                                               # Okular - Document viewer.
+      spectacle                                            # Spectacle - Screenshot creator.
     ];
   };
 
