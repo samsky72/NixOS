@@ -12,8 +12,13 @@
   networking = {
   
     # Firewall configurations. 
-    firewall = {						
-      allowedTCPPorts = [ 80 443 8118 ]; 				# Allow HTTP and HTTPS.
+    firewall = {
+      allowedTCPPorts = [
+        80
+        443
+        5222
+        8118
+      ];
       enable = true;
     };
 
