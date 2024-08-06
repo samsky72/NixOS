@@ -1,5 +1,9 @@
 # Networking configurations.
-{ config, ... }: {
+{ config, pkgs, ... }: {
+
+  environment.systemPackages = with pkgs; [
+    whatsapp-for-linux
+  ];
 
   # Enable bluetooth.
   hardware.bluetooth.enable = true;
