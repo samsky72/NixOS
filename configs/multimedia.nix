@@ -7,6 +7,7 @@
   # Add some multimedia softwares.
   environment.systemPackages = with pkgs; [
     djvulibre                                             # DJVULibre - Libraries for djvu support.
+    obs-studio                                            # OBS Studio - Software for video recording.
     smplayer                                              # SMPlayer - QT frontend for mpv.
     spotify                                               # Spotify - Audio player.
   ];
