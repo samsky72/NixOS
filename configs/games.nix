@@ -1,9 +1,10 @@
 # Some gaming configurations.
 { config, pkgs, ... }: {
 
-  # Some game=ing related softwares.
+  # Some gameing related softwares.
   environment.systemPackages = with pkgs; [
-    mangohud                                              # Real-time game statistics (FPS, CPU/GPU loading statistics, etc.)
+    mangohud                                              # MangoHud - Real-time game statistics (FPS, CPU/GPU loading statistics, etc.)
+    retroarchFull                                         # RetroArch - Multi-platform emulator frontend for libretro cores.
   ];
    
   # Add 32 bit graphical libraries.
