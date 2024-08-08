@@ -8,6 +8,7 @@
   environment.systemPackages = with pkgs; [
     djvulibre                                             # DJVULibre - Libraries for djvu support.
     obs-studio                                            # OBS Studio - Software for video recording.
+    nur.repos.xddxdd.svp                                  # SVP - Real time frame rate converter.
     smplayer                                              # SMPlayer - QT frontend for mpv.
     spotify                                               # Spotify - Audio player.
   ];
