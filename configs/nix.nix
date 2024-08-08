@@ -2,7 +2,10 @@
 { config, pkgs, ... }: {
 
   # Use nil LSP server.
-  environment.systemPackages = [ pkgs.nil ];
+  environment.systemPackages = with pkgs; [
+    nil
+    nixd
+  ];
 
   # Nix package manager configurations.
   nix = {
