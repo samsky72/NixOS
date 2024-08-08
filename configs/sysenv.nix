@@ -19,9 +19,10 @@
 
   # Define system wide packages.
   environment.systemPackages =  with pkgs;[
-    fastfetch                                               # fastfetch - System information fetcher like neofetch.
-    psmisc                                                  # psmsc - process control.
-    mc                                                      # midnight Commander - File manager.
+    citrix_workspace                                        # Citrix_workspace - Citrix ICA client.
+    fastfetch                                               # Fastfetch - System information fetcher like neofetch.
+    psmisc                                                  # Psmsc - process control.
+    mc                                                      # Midnight Commander - File manager.
   ];
 
   # Define supported locales.
