@@ -38,7 +38,7 @@
       ./hosts/${hostName}.nix                                     # For different laptops.
       
       # Home Manager modules configurations.
-      home-manager.nixosModules.home-manager {						
+      home-manager.nixosModules.home-manager {
         home-manager = {
           extraSpecialArgs = { inherit stateVersion; inherit userName; };
           useGlobalPkgs = true;
