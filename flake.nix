@@ -10,12 +10,20 @@
       url =  "github:nix-community/home-manager";
     };
 
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";          # Use unstable repo.
+    # Use unstable repo.
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+    # Use NixVim.
+    nixvim = {                                                
+      inputs.nixpkgs.follows = "nixpkgs";                         # NixVim follow nixpkgs.
+      url = "github:nix-community/nixvim";
+    };
+
     nur.url = "github:nix-community/NUR";                         # Use Nix Users Repository.
   };
 
   # Outputs configurations.  
-  outputs = inputs@{ self, home-manager, nixpkgs, nur, ... }:
+  outputs = inputs@{ self, home-manager, nixpkgs, nixvim, nur, ... }:
   let
     # Define hosts.
     hosts = {
@@ -34,13 +42,15 @@
 
     # Define modules function.
     module = hostName: [
+    #  nixvim.homeManagerModules.nixvim
+      nixvim.nixosModules.nixvim
       ./configs/configuration.nix                                 # Unified configurations.
       ./hosts/${hostName}.nix                                     # For different laptops.
       
       # Home Manager modules configurations.
       home-manager.nixosModules.home-manager {
         home-manager = {
-          extraSpecialArgs = { inherit stateVersion; inherit userName; };
+          extraSpecialArgs = { inherit inputs; inherit stateVersion; inherit userName; };
           useGlobalPkgs = true;
           useUserPackages = true;
           users.${userName} = import ./home-manager/home.nix;
