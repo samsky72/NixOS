@@ -1,9 +1,8 @@
 # Nix and nixpkgs configuration.
 { config, pkgs, ... }: {
 
-  # Use nil LSP server.
+  # Use nixd LSP server.
   environment.systemPackages = with pkgs; [
-    nil
     nixd
   ];
 
@@ -16,6 +15,7 @@
       dates = "weekly";                                     # On weekly base.
       options = "-d" ;                                      # Cleanup.
     };
+
 
     # Nix settings.
     settings = {
