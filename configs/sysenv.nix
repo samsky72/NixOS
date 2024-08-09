@@ -12,9 +12,10 @@
     shellInit = "fastfetch && cd ~/NixOS";
   in {
 
-  # Import required packages
+  # Import required packages.
   imports = [
-    ../packages/git.nix
+    ../packages/git.nix                                     # Git package configuration.
+    ../packages/nixvim.nix                                  # NixVim configuration.
   ];
 
   # Define system wide packages.
