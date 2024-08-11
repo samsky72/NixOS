@@ -2,7 +2,9 @@
 { config, pkgs, ... }: {
 
   environment.systemPackages = with pkgs; [
-    whatsapp-for-linux
+    teams-for-linux                           # Teams - MS Teams client.
+    telegram-desktop                          # Telegram Desktop - Telegram client.
+    whatsapp-for-linux                        # WhatsApp - WhatsApp client.               
   ];
 
   # Enable bluetooth.
