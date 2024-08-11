@@ -1,9 +1,14 @@
 # Home manager confgiurations.
-{ config, inputs, stateVersion, ...}: {
+{ config, inputs, stateVersion, userName, ...}: {
 
   imports = [
     inputs.nixvim.homeManagerModules.nixvim       # NixVim home managers module.
   ];
 
-  home.stateVersion = stateVersion;
+  # Define default home variables.
+  home = {
+    homeDirectory = "/home/${userName}";
+    stateVersion = stateVersion;
+    username = userName;
+  };
 }
