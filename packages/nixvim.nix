@@ -92,7 +92,6 @@
     enable = true;                      # Define nixvim system wide.
     viAlias = true;                     # Define vi alias.
     vimAlias = true;                    # Define vim alias.
-    vimdiffAlias = true;                # Define vimdiff alias.
   };
 }
 
