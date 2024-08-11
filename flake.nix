@@ -33,6 +33,7 @@
       zephyrus = "zephyrus";                                      # Asus Zephyrus Duo 16.
     };
 
+
     # NixOS configuration function.
     lib = hostName: nixpkgs.lib.nixosSystem {
        inherit system;
@@ -60,11 +61,25 @@
       # Define NUR overlay. 
       { nixpkgs.overlays = [ nur.overlay ]; }		
     ];
-    
+
+    pkgs = import nixpkgs { inherit system; };
+
     stateVersion = "24.05";                                       # Initial state version.
     system = "x86_64-linux";                                      # Host system.
     userName = "samsky";                                          # Default user - samsky.
-  in {   
+
+  in {
+
+    # Define homeConfigurations for nixd compatibility.
+    homeConfigurations."${userName}" = home-manager.lib.homeManagerConfiguration {
+        inherit pkgs;
+        extraSpecialArgs = {inherit inputs; inherit stateVersion; inherit userName;};
+        modules = [
+          ./home-manager/home.nix
+        ];
+      };
+    
+    # Define nixosConfigurations for systems. 
     nixosConfigurations = {
       ${hosts.helios} = lib hosts.helios;                         # Acer Helios 500 configurations.
       ${hosts.legion} = lib hosts.legion;                         # Lenovo Legion 7 configurations.
