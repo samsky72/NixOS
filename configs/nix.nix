@@ -16,13 +16,11 @@
       options = "-d" ;                                      # Cleanup.
     };
 
-
     # Nix settings.
     settings = {
       auto-optimise-store = true;                           # Enable auto optimise store.
       experimental-features = [ "flakes" "nix-command" ];   # Use flakes and nix commands.
     };
-  
   };
   
   # Allow unfree packages.
