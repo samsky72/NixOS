@@ -18,7 +18,16 @@
 
   # Use pipewire as sound server.
   services.pipewire = {
-     enable = true;
-     pulse.enable = true;                                 # Enable pulseaudio support.
+
+    # Enable ALSA support.
+    alsa = {                                              
+      enable = true;
+      support32Bit = true;
+    };
+
+    enable = true;
+    
+    # Enable Pulse Audio support.
+    pulse.enable = true;
   };
 }
