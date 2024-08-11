@@ -2,6 +2,7 @@
 { config, pkgs, ... }: {
 
   environment.systemPackages = with pkgs; [
+    dig                                       # Dig - DNS tools.
     teams-for-linux                           # Teams - MS Teams client.
     telegram-desktop                          # Telegram Desktop - Telegram client.
     whatsapp-for-linux                        # WhatsApp - WhatsApp client.               
@@ -15,12 +16,18 @@
   
     # Firewall configurations. 
     firewall = {
+      
       allowedTCPPorts = [
         80                                # Open HTTP.
         443                               # Open HTTPS.
         5222                              # Open WhatsApp.
         8118                              # Open Privoxy.
       ];
+      
+      allowedTCPPortRanges = [
+        { from = 1714; to = 1764; }       # Open KDEConnect.
+      ];
+
       enable = true;
     };
 
