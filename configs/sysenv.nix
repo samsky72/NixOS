@@ -16,7 +16,7 @@
   imports = [
     ../packages/git.nix                                     # Git package configuration.
     ../packages/nixvim.nix                                  # NixVim configuration.
-  ];
+];
 
   # Define system wide packages.
   environment.systemPackages =  with pkgs;[
