@@ -12,6 +12,7 @@
       ./sysenv.nix                  # System environment confgurations.
       ./nix.nix                     # Nix and nixpkgs configurations.
       ./users.nix                   # Users configurations.
+      ./virtualisation.nix          # virtualisation configurations.
       ./xserver.nix                 # X server confgurations.
     ];
 
