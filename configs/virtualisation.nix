@@ -1,5 +1,11 @@
 # Virtualisation configuration.
-{ config, ... }: {
+{ config, pkgs, ... }: {
 
-    virtualisation.libvirtd.enable = true;
+  # Libvirt configuration.
+  virtualisation.libvirtd = {
+    enable = true;
+      qemu = {
+      package = pkgs.qemu_full;         # Full QEMU in use. 
+    };
+  };  
 }
