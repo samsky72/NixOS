@@ -6,7 +6,9 @@
 
   # Add some multimedia softwares.
   environment.systemPackages = with pkgs; [
+    darktable                                             # DarkTable - RAW editor.
     djvulibre                                             # DJVULibre - Libraries for djvu support.
+    gimp-with-plugins                                     # GIMP - Image editor.
     obs-studio                                            # OBS Studio - Software for video recording.
     nur.repos.xddxdd.svp                                  # SVP - Real time frame rate converter.
     smplayer                                              # SMPlayer - QT frontend for mpv.
