@@ -18,6 +18,9 @@
 
     plugins = {
 
+      # Status bar plugin.  
+      airline.enable = true;
+
       # Complete plugins.
       cmp = {
         autoEnableSources = true;
@@ -77,21 +80,25 @@
       luasnip = {
         enable= true;
         fromVscode = [ ];
-      };
+      };  
 
       # Auto pairs plugins.
       nvim-autopairs.enable = true;
 
       # Treesitter plugins.
       treesitter.enable = true;
+
     };
+
+  # Define aliases.
+  viAlias = true;                       # Define vi alias.
+  vimAlias = true;                      # Define vim alias.
+  vimdiffAlias = true;                  # Define vimdiff alias.
   };
 
   #NixVim configuration.
   programs.nixvim = {
     enable = true;                      # Define nixvim system wide.
-    viAlias = true;                     # Define vi alias.
-    vimAlias = true;                    # Define vim alias.
   };
 }
 
