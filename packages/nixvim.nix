@@ -20,6 +20,9 @@
 
       # Status bar plugin.  
       airline.enable = true;
+    
+      # Duffer line plugin.
+      bufferline.enable = true;
 
       # Complete plugins.
       cmp = {
@@ -56,6 +59,7 @@
         servers = {
           nixd = {
             enable = true;
+
             settings = {
               nixpkgs = { 
                 expr = "import <nixpkgs> { }";
