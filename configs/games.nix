@@ -4,6 +4,7 @@
   # Some gaming related softwares.
   environment.systemPackages = with pkgs; [
     mangohud                                              # MangoHud - Real-time game statistics (FPS, CPU/GPU loading statistics, etc.)
+    protontricks
     retroarchFull                                         # RetroArch - Multi-platform emulator frontend for libretro cores.
   ];
    
