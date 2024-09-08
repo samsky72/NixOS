@@ -41,6 +41,7 @@
   hardware = {
     cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;                # Update AMD CPU microcode.
     i2c.enable = true;                                                                                    # Add I2C support for keypad/touchpad support.
+    nvidia.open = false;                                                                                  # Use proprietary driver.
   };
 
   # No swap required, as 32 GB onboard.
