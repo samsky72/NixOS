@@ -1,15 +1,5 @@
 # Plasma configurations
-{ config, lib, pkgs, userName, ... }: 
-  let
-    hostName = config.networking.hostName;
-
-in  {
-
-  # Define touchscreen for zephyrus.
-  home-manager.users.${userName}.home.file.".config/kcminputrc".text = lib.mkIf (hostName == "zephyrus") ''
-    [Libinput][1267][16857][ELAN9009:00 04F3:41D9]
-    OutputName=DP-5
-  '';
+{ pkgs, ... }:{
 
   # The KDE 6 packages.
   environment = {
