@@ -1,12 +1,12 @@
 # System environmentconfigurations.
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
   let
     # Define shell alisases.
     shellAliases = {
       ll = "ls -lah";
       system-rebuild = "cd ~/NixOS && sudo nixos-rebuild switch --flake .";
-      system-update = "cd ~/NixOS && nix flake update && sudo nixos-rebuild switch --flake .";
+      system-update = "cd ~/NixOS && cp flake.lock flake.lock.$(date -Iminutes).bak && nix flake update && sudo nixos-rebuild switch --flake .";
       system-cleanup = "sudo nix-collect-garbage -d && nix-collect-garbage -d";
     };
     shellInit = "fastfetch && cd ~/NixOS";
