@@ -28,8 +28,7 @@
           home-manager.nixosModules.home-manager
           {
             # Make inputs/hostName available inside HM modules too (optional)
-            home-manager.extraSpecialArgs = { inherit inputs hostName; };
-
+            home-manager.extraSpecialArgs = { inherit inputs hostName defaultUser; };
             # HM user is chosen via defaultUser
             home-manager.users.${defaultUser} = import ./home/${defaultUser}.nix;
           }
