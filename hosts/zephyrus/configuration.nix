@@ -3,6 +3,7 @@
 {
   imports = [
     ./hardware.nix
+    ../../modules/users.nix
   ];
 
   networking.hostName = "zephyrus";
