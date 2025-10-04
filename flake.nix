@@ -28,7 +28,7 @@
           home-manager.nixosModules.home-manager
 
           # Hook Home Manager to user 'samsky' via module file
-          { home-manager.users.samsky = import ./home/${defaultUser}.nix; }
+          { home-manager.users.${defaultUser} = import ./home/${defaultUser}.nix; }
         ];
       };
     };
