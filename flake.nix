@@ -3,7 +3,6 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    # Pin HM against the same nixpkgs input
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -12,24 +11,34 @@
 
   outputs = inputs@{ self, nixpkgs, home-manager, ... }:
     let
-      hostName = "zephyrus";
       system = "x86_64-linux";
       lib = nixpkgs.lib;
+
+      # Simple map of users you manage in this repo
       users = { guest = "guest"; samsky = "samsky"; };
       defaultUser = users.samsky;
-      
-    in {
-      nixosConfigurations.${hostName} = lib.nixosSystem {
+
+      # Function to build a NixOS config for a given host
+      mkHost = hostName: lib.nixosSystem {
         inherit system;
         specialArgs = { inherit inputs hostName; };
         modules = [
           ./hosts/${hostName}/configuration.nix
           ./modules/system.nix
           home-manager.nixosModules.home-manager
+          {
+            # Make inputs/hostName available inside HM modules too (optional)
+            home-manager.extraSpecialArgs = { inherit inputs hostName; };
 
-          # Hook Home Manager to user 'samsky' via module file
-          { home-manager.users.${defaultUser} = import ./home/${defaultUser}.nix; }
+            # HM user is chosen via defaultUser
+            home-manager.users.${defaultUser} = import ./home/${defaultUser}.nix;
+          }
         ];
+      };
+    in
+    {
+      nixosConfigurations = {
+        zephyrus = mkHost "zephyrus";
       };
     };
 }
