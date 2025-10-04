@@ -15,17 +15,20 @@
       hostName = "zephyrus";
       system = "x86_64-linux";
       lib = nixpkgs.lib;
+      users = { guest = "guest"; samsky = "samsky"; };
+      defaultUser = users.samsky;
+      
     in {
       nixosConfigurations.${hostName} = lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit inputs; inherit hostName; };
+        specialArgs = { inherit inputs hostName; };
         modules = [
-          ./hosts/zephyrus/configuration.nix
+          ./hosts/${hostName}/configuration.nix
           ./modules/system.nix
           home-manager.nixosModules.home-manager
 
           # Hook Home Manager to user 'samsky' via module file
-          { home-manager.users.samsky = import ./home/modules/samsky.nix; }
+          { home-manager.users.samsky = import ./home/${defaultUser}.nix; }
         ];
       };
     };
