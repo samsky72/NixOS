@@ -1,5 +1,5 @@
 {
-  description = "NixOS (unstable) + Hyprland + Home Manager for host zephyrus and user samsky";
+  description = "Samsky NixOS configuration";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -12,12 +12,13 @@
 
   outputs = inputs@{ self, nixpkgs, home-manager, ... }:
     let
+      hostName = "zephyrus";
       system = "x86_64-linux";
       lib = nixpkgs.lib;
     in {
-      nixosConfigurations.zephyrus = lib.nixosSystem {
+      nixosConfigurations.${hostName} = lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit inputs; };
+        specialArgs = { inherit inputs; inherit hostName; };
         modules = [
           ./hosts/zephyrus/configuration.nix
           ./modules/system.nix
