@@ -1,6 +1,6 @@
 # modules/boot.nix
-{ ... }:
-{
+{ ... }: {
+
   boot = {
     ##########################################
     ## Bootloader configuration (UEFI setup)

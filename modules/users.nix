@@ -1,22 +1,28 @@
 # modules/users.nix
-{ pkgs, lib, defaultUser, ... }: {
+{ pkgs, defaultUser, ... }: {
 
-  # Create group explicitly (group name same as user)
+  ##########################################
+  ## User and group configuration
+  ##########################################
+
+  # Create primary group (same name as user)
   users.groups.${defaultUser} = { gid = 1000; };
   
+  # Define the main user account
   users.users.${defaultUser} = {
     isNormalUser = true;
-    group = defaultUser;
-    extraGroups = [ "wheel" "networkmanager" ];
+    group = defaultUser;  # assign to primary group
+    extraGroups = [ "wheel" "networkmanager" ];  # admin & network privileges
     shell = pkgs.bashInteractive;
 
-    # For a fresh install, pick ONE method of authentication:
-    # 1) Temporary password (change immediately after first boot):
-    initialPassword = "Password100";
-
-    # 2) Or, safer: authorized SSH keys
+    ##########################################
+    ## Authentication
+    ##########################################
+    # Choose only one:
+    initialPassword = "Password100";  # temporary, change immediately
     # openssh.authorizedKeys.keys = [
-    #   "ssh-ed25519 AAAA... yourkey"
+    #   "ssh-ed25519 AAAA...yourkey"
     # ];
   };
 }
+

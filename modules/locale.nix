@@ -1,6 +1,6 @@
 # modules/locale.nix
-{ lib, ... }:
-{
+{ ... }: {
+
   ##########################################
   ## Locale and time configuration
   ##########################################
@@ -20,7 +20,8 @@
   console.useXkbConfig = true;
 
   # Keyboard layouts and switching (applies to Wayland too)
-  services.xserver.xkb.layout = "us,ru";
-  services.xserver.xkb.options = "grp:win_space_toggle";
-
+  services.xserver.xkb = {
+    layout = "us,ru";
+    options = "grp:win_space_toggle";
+  };
 }

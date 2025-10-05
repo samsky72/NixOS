@@ -1,31 +1,54 @@
 # modules/services.nix
-{ lib, pkgs, ... }:
+{ pkgs, ... }:
 {
   ##########################################
-  ## Basic services
+  ## System Services Configuration
+  ##
+  ## Provides essential background daemons
+  ## such as SSH, power management, and logging.
   ##########################################
 
-  # Disable printing (CUPS)
-  services.printing.enable = false;
-
-  # Enable SSH for remote access
+  ##########################################
+  ## SSH Server (secure remote access)
+  ##########################################
   services.openssh = {
     enable = true;
 
-    # Harden defaults
+    # Harden SSH settings
     settings = {
-      PermitRootLogin = "no";          # block direct root login
-      PasswordAuthentication = false;  # require SSH key
+      PermitRootLogin = "no";          # Prevent direct root login
+      PasswordAuthentication = false;  # Enforce SSH key authentication
+      X11Forwarding = false;           # Disable unnecessary forwarding
+      AllowTcpForwarding = "no";       # Reduce attack surface
+      ClientAliveInterval = 120;       # Keep connections alive
+      ClientAliveCountMax = 2;
     };
   };
 
   ##########################################
-  ## Optional: more system-level services
+  ## System Logging & Monitoring
   ##########################################
-  # Example: Bluetooth
-  # hardware.bluetooth.enable = true;
+  services.journald = {
+    rateLimitInterval = "30s";
+    rateLimitBurst = 1000;
+    storage = "auto";
+  };
 
-  # Example: power management
-  # services.upower.enable = true;
+  ##########################################
+  ## Power Management (Laptop-friendly)
+  ##########################################
+  services.upower.enable = true;        # Track battery, suspend, etc.
+  services.power-profiles-daemon.enable = true; # Manage CPU power modes
+
+  ##########################################
+  ## Optional: Time Synchronization
+  ##########################################
+  services.timesyncd.enable = true; # Keeps system clock accurate
+
+  ##########################################
+  ## Optional: GNOME keyring (for SSH, secrets, etc.)
+  ##########################################
+  services.gnome.gnome-keyring.enable = true;
 }
+
 

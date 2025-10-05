@@ -1,33 +1,43 @@
 # modules/portals.nix
-{ pkgs, lib, ... }:
-{
+{ pkgs, ... }: {
+
   ##########################################
-  ## XDG Desktop Portals for Wayland/Hyprland
+  ## XDG Desktop Portals for Wayland / Hyprland
+  ##
+  ## These provide system-level integrations like:
+  ## - File pickers
+  ## - Screenshots & screen sharing
+  ## - Open/save dialogs for sandboxed apps
+  ##
+  ## The Hyprland portal ensures native support on Wayland.
   ##########################################
 
   xdg.portal = {
     enable = true;
 
-    # Add Hyprland-specific backend
+    # Hyprland portal backend (Wayland-native)
     extraPortals = [ pkgs.xdg-desktop-portal-hyprland ];
 
-    # Optionally set default backend priorities (useful if running multiple compositors)
-    config = {
-      common = {
-        default = [ "hyprland" "gtk" ];
-      };
-    };
+    # Fallback ordering for other apps (GTK/Flatpak)
+    config.common.default = [ "hyprland" "gtk" ];
   };
 
   ##########################################
-  ## Related quality-of-life packages
+  ## Related Quality-of-Life Packages
   ##########################################
   environment.systemPackages = with pkgs; [
     xdg-desktop-portal
     xdg-desktop-portal-hyprland
-    xdg-desktop-portal-gtk   # fallback for GTK apps
+    xdg-desktop-portal-gtk     # fallback for GTK/Flatpak apps
+    xdg-utils                   # ensures `xdg-open` etc. work properly
   ];
 
-  # Polkit for permission dialogs (some portals require it)
+  ##########################################
+  ## Polkit — required for permissions dialogs
+  ##
+  ## Enables GUI prompts for privileged actions,
+  ## such as mounting drives, network changes, etc.
+  ##########################################
   security.polkit.enable = true;
 }
+

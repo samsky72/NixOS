@@ -51,7 +51,6 @@
         modules = [
           # Host and shared config
           ./hosts/${hostName}/configuration.nix
-          ./modules/system.nix
 
           # --- Add NUR overlay globally ---
           { nixpkgs.overlays = [ nur.overlays.default ]; }

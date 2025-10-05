@@ -1,30 +1,59 @@
 # modules/network.nix
-{ lib, pkgs, hostName, ... }:
-{
+{ pkgs, hostName, ... }: {
+
   #########################################
-  ## Basic networking configuration
+  ## Networking Configuration
+  #########################################
+  ## Provides full networking setup via NetworkManager,
+  ## secure firewall defaults, and essential CLI tools for
+  ## troubleshooting, monitoring, and connectivity testing.
   #########################################
 
-  # Enable NetworkManager — handles Wi-Fi, Ethernet, VPNs, etc.
-  networking.networkmanager.enable = true;
+  networking = {
+    # Enable NetworkManager (handles Wi-Fi, Ethernet, VPNs, etc.)
+    networkmanager.enable = true;
 
-  # Optional: hostname for this machine
-  # (Each host config can override this)
-  networking.hostName = hostName;
+    # Set system hostname dynamically from flake
+    hostName = hostName;
 
-  # Optional: wireless tweaks (useful on laptops)
-  # networking.networkmanager.wifi.backend = "iwd";  # alternative Wi-Fi backend
-  # networking.networkmanager.ensureProfiles = true; # ensure NM profiles exist
+    #########################################
+    ## Firewall Configuration
+    #########################################
+    firewall = {
+      enable = true;            # Enable NixOS firewall
+      allowedTCPPorts = [ 22 ]; # Allow SSH
+      allowedUDPPorts = [ ];    # Default deny for UDP
+    };
+  };
 
-  # Optional: disable wait for network on boot (boot faster)
+  #########################################
+  ## Boot-time Network Behavior
+  #########################################
+  # Disable waiting for network initialization during boot
+  # to improve startup time (good for laptops).
   systemd.network.wait-online.enable = false;
 
   #########################################
-  ## Firewall (safe defaults)
+  ## Network Utilities
   #########################################
-  networking.firewall = {
-    enable = true;
-    allowedTCPPorts = [ 22 ];  # allow SSH
-    allowedUDPPorts = [ ];
-  };
+  environment.systemPackages = with pkgs; [
+    # Basic tools
+    curl           # Fetch remote resources over HTTP(S)
+    wget           # Lightweight download utility
+    inetutils      # Provides ping, hostname, etc.
+    iproute2       # Modern replacement for net-tools
+    dnsutils       # dig, nslookup, etc.
+    mtr            # Traceroute + ping combo for diagnostics
+    nmap           # Port scanning / network discovery
+    traceroute     # Basic traceroute tool
+    tcpdump        # Packet capture utility (requires root)
+    netcat         # TCP/UDP testing (aka `nc`)
+    socat          # Advanced socket utility
+    ethtool        # Query and control network driver settings
+    iw             # Wireless interface management
+  ];
+
+  # Enable Bluetooth network bridging
+  hardware.bluetooth.enable = true;
 }
+

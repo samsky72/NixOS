@@ -1,6 +1,6 @@
 # modules/hyprland.nix
 { pkgs, defaultUser, ... }: {
-
+ 
   ##########################################
   ## Wayland + Hyprland Desktop Environment
   ##########################################
