@@ -21,9 +21,6 @@
     jack.enable = true;             # JACK audio support for prosumer apps
   };
 
-  # WirePlumber is the default session manager (preferred over pipewire-media-session)
-  services.wireplumber.enable = true;
-
   ##########################################
   ## Video & Codec Support
   ##########################################
@@ -44,12 +41,12 @@
     ##########################################
     # Codecs and libraries
     ##########################################
-    gstreamer
-    gst-plugins-base
-    gst-plugins-good
-    gst-plugins-bad
-    gst-plugins-ugly
-    gst-libav
+    gst_all_1.gstreamer
+    gst_all_1.gst-plugins-base
+    gst_all_1.gst-plugins-good
+    gst_all_1.gst-plugins-bad
+    gst_all_1.gst-plugins-ugly
+    gst_all_1.gst-libav
     libva-utils         # VA-API video acceleration tools
     v4l-utils           # video4linux (webcam utilities)
   ];

@@ -1,40 +1,68 @@
-{ pkgs, lib, ... }:
-{
+# home/modules/kitty.nix
+{ ... }: {
+
+  ##########################################
+  ## Kitty Terminal Configuration (Home Manager)
+  ##########################################
+  ##
+  ## This module configures the Kitty terminal emulator
+  ## with custom fonts, visuals, mouse trails, and keybindings.
+  ## All settings are rendered directly into ~/.config/kitty/kitty.conf.
+  ##########################################
+
   programs.kitty = {
     enable = true;
 
-    # Optional: pick a theme by name (from kitty-themes)
-    # programs.kitty.theme = "Catppuccin-Mocha";
+    ##########################################
+    ## Appearance
+    ##########################################
+    # Optional theme (requires kitty-themes package)
+    # theme = "Catppuccin-Mocha";
 
-    # Optional font config
     font = {
-      name = "JetBrainsMono Nerd Font";  # or leave unset to use system default
+      name = "JetBrainsMono Nerd Font";  # or another Nerd Font
       size = 12.0;
     };
 
-    # Kitty settings (these render directly into kitty.conf)
     settings = {
-      # matches your old snippet:
-      enable_audio_bell = "no";
-      confirm_os_window_close = "0";
+      ##########################################
+      ## Behavior & Visuals
+      ##########################################
+      enable_audio_bell = "no";       # disable terminal bell
+      confirm_os_window_close = "0";  # skip confirmation prompt
+      cursor_shape = "beam";          # modern beam cursor
+      cursor_blink_interval = "0";    # disable blinking cursor
+      background_opacity = "0.95";    # slightly transparent background
 
-      # nice defaults:
-      cursor_shape = "beam";
-      cursor_blink_interval = "0";
-      background_opacity = "0.95";
+      # Scrolling and layout
+      scrollback_lines = 5000;
+      window_padding_width = 4;
+
+      ##########################################
+      ## Mouse Trails
+      ##########################################
+      # Adds a smooth trail to the mouse cursor (Wayland/GL only)
+      cursor_trail = 1;            # enable mouse trails (1 = on)
+      #      cursor_trail_decay = 1;    # how quickly the trail fades (0.1–1.0)
+      cursor_trail_length = 3;     # how many frames the trail lasts (higher = longer)
     };
 
-    # Keybindings (render to kitty.conf)
+    ##########################################
+    ## Keybindings
+    ##########################################
     keybindings = {
-      "ctrl+shift+t" = "new_tab";
-      "ctrl+shift+w" = "close_tab";
-      "ctrl+shift+enter" = "new_window";
+      "ctrl+shift+t" = "new_tab";        # open new tab
+      "ctrl+shift+w" = "close_tab";      # close tab
+      "ctrl+shift+enter" = "new_window"; # open new window
     };
 
-    # Drop in any raw lines not covered by settings/keybindings
+    ##########################################
+    ## Extra Configuration
+    ##########################################
     extraConfig = ''
-      # include other fragments if you want:
+      # Example: include custom color theme
       # include theme.conf
     '';
   };
 }
+
