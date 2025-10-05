@@ -7,7 +7,7 @@
     ../modules/kitty.nix
     ../modules/packages.nix
     ../modules/hyprland.nix
-
+    ../modules/nixvim.nix
     # Import nixvim’s Home Manager module
     inputs.nixvim.homeModules.nixvim
   ];
