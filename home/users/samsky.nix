@@ -1,4 +1,4 @@
-{ config, pkgs, lib, defaultUser, ... }:
+{ config, pkgs, lib, inputs, defaultUser, ... }:
 
 {
   imports = [
@@ -6,6 +6,9 @@
     ../modules/git.nix
     ../modules/kitty.nix
     ../modules/packages.nix
+
+    # Import nixvim’s Home Manager module
+    inputs.nixvim.homeManagerModules.nixvim
   ];
 
   home.username = defaultUser;
