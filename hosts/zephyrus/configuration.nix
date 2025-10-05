@@ -12,6 +12,7 @@
     ../../modules/portals.nix
     ../../modules/packages.nix
     ../../modules/services.nix
+    ../../modules/multimedia.nix
   ];
  
   # Match your current NixOS release for stable state evolution

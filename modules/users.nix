@@ -12,7 +12,7 @@
   users.users.${defaultUser} = {
     isNormalUser = true;
     group = defaultUser;  # assign to primary group
-    extraGroups = [ "wheel" "networkmanager" ];  # admin & network privileges
+    extraGroups = [ "audio" "video" "wheel" "networkmanager" ];  # admin & network privileges
     shell = pkgs.bashInteractive;
 
     ##########################################
