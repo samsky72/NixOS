@@ -11,6 +11,8 @@
     wget
     vim
 
+    gcc
+
     # Nix helpers
     nixpkgs-fmt
     nix-tree
