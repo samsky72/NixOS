@@ -56,9 +56,6 @@
           # --- Add NUR overlay globally ---
           { nixpkgs.overlays = [ nur.overlays.default ]; }
 
-          # --- Add nixvim module at system level ---
-          inputs.nixvim.nixosModules.nixvim
-
           # --- Home Manager integration ---
           home-manager.nixosModules.home-manager
           {
