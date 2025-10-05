@@ -2,21 +2,19 @@
 { pkgs, ... }:
 {
   ##########################################
-  ## Firefox (Home Manager)
+  ## Firefox Configuration (Home Manager)
   ##########################################
   ##
   ## - Wayland + VAAPI tweaks for Hyprland
   ## - New HM schemas:
-  ##     * Bookmarks:   profiles.<name>.bookmarks = { force; settings = [ ... ]; }
-  ##     * Extensions:  profiles.<name>.extensions.packages = [ ... ]
-  ## - Bookmarks Toolbar is forced visible (see settings block)
+  ##     * Bookmarks:   profiles.<name>.bookmarks = { force; settings = [ … ]; }
+  ##     * Extensions:  profiles.<name>.extensions.packages = [ … ]
+  ## - Bookmarks Toolbar items via a folder with `toolbar = true`
   ##########################################
 
   programs.firefox = {
     enable = true;
-
-    # Choose the build (pkgs.firefox-bin is an option if you prefer Mozilla’s binaries)
-    package = pkgs.firefox;
+    package = pkgs.firefox; # or pkgs.firefox-bin
 
     profiles.default = {
       id = 0;
@@ -28,26 +26,25 @@
       ########################################
       settings = {
         # --- UI / Appearance ---
-        "browser.startup.page" = 3;                 # restore previous session
-        "browser.tabs.drawInTitlebar" = true;       # hide system titlebar
+        "browser.startup.page" = 3;               # restore previous session
+        "browser.tabs.drawInTitlebar" = true;     # hide system titlebar
         "browser.theme.dark-private-windows" = true;
         "extensions.activeThemeID" = "firefox-compact-dark@mozilla.org";
         "layout.css.prefers-color-scheme.content-override" = 0; # follow system theme
 
-        # Show the Bookmarks Toolbar:
-        #   values: "always" | "newtab" | "never"
+        # Show the Bookmarks Toolbar (always/newtab/never)
         "browser.toolbars.bookmarks.visibility" = "always";
 
         # --- Performance / Wayland VAAPI ---
-        "gfx.webrender.all" = true;                 # GPU rendering
-        "media.ffmpeg.vaapi.enabled" = true;        # hardware decode
-        "widget.dmabuf.force-enabled" = true;       # Wayland/DMABUF path
+        "gfx.webrender.all" = true;
+        "media.ffmpeg.vaapi.enabled" = true;
+        "widget.dmabuf.force-enabled" = true;
 
         # --- Privacy / Usability ---
         "privacy.trackingprotection.enabled" = true;
-        "network.cookie.cookieBehavior" = 1;        # block 3rd-party cookies
-        "signon.rememberSignons" = false;           # don’t save passwords
-        "privacy.resistFingerprinting" = false;     # keep normal scaling/UX
+        "network.cookie.cookieBehavior" = 1;      # block 3rd-party cookies
+        "signon.rememberSignons" = false;         # don’t save passwords
+        "privacy.resistFingerprinting" = false;   # keep normal scaling/UX
         "privacy.clearOnShutdown.history" = false;
 
         "general.smoothScroll" = true;
@@ -57,34 +54,36 @@
       };
 
       ########################################
-      ## Bookmarks (NEW HM schema)
+      ## Bookmarks (toolbar-enabled)
       ########################################
-      # Home Manager now requires the submodule with `force` and `settings`.
       bookmarks = {
-        force = true;  # overwrite existing bookmarks on rebuild
+        force = true;  # overwrite manual changes on rebuild
         settings = [
           {
-            name = "NixOS";
-            url = "https://nixos.org";
-            tags = [ "nixos" "docs" ];
-            keyword = "nix";
-          }
-          { name = "My GitHub"; url = "https://github.com/samsky72"; }
-          "separator"
-          {
-            name = "Docs";
+            # Everything inside appears on the Bookmarks Toolbar
+            name = "Toolbar";
+            toolbar = true;
+
             bookmarks = [
-              { name = "Hyprland Wiki"; url = "https://wiki.hyprland.org/"; }
-              { name = "Home Manager";  url = "https://nix-community.github.io/home-manager/"; }
+              { name = "NixOS";  url = "https://nixos.org"; keyword = "nix"; }
+              { name = "My GitHub"; url = "https://github.com/samsky72"; }
+              "separator"
+              {
+                name = "Docs";
+                bookmarks = [
+                  { name = "Hyprland Wiki"; url = "https://wiki.hyprland.org/"; }
+                  { name = "Home Manager";  url = "https://nix-community.github.io/home-manager/"; }
+                ];
+              }
             ];
           }
         ];
       };
 
       ########################################
-      ## Extensions (NEW HM schema)
+      ## Extensions (requires NUR overlay in HM)
       ########################################
-      # Requires NUR overlay available in Home Manager:
+      # Ensure Home Manager has:
       #   nixpkgs.overlays = [ inputs.nur.overlays.default ];
       extensions.packages = with pkgs.nur.repos.rycee.firefox-addons; [
         ublock-origin
