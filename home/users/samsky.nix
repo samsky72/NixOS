@@ -6,6 +6,7 @@
     ../modules/git.nix
     ../modules/kitty.nix
     ../modules/packages.nix
+    ../modules/hyprland.nix
 
     # Import nixvim’s Home Manager module
     inputs.nixvim.homeManagerModules.nixvim
