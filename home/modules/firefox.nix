@@ -5,16 +5,18 @@
   ## Firefox Configuration (Home Manager)
   ##########################################
   ##
-  ## - Wayland + VAAPI tweaks for Hyprland
-  ## - New HM schemas:
-  ##     * Bookmarks:   profiles.<name>.bookmarks = { force; settings = [ … ]; }
-  ##     * Extensions:  profiles.<name>.extensions.packages = [ … ]
-  ## - Bookmarks Toolbar items via a folder with `toolbar = true`
+  ## This module provides a fully declarative Firefox setup with:
+  ##  - GPU acceleration (Wayland + VAAPI tweaks)
+  ##  - Privacy-friendly and ergonomic defaults
+  ##  - Declarative bookmarks and extensions (per-profile)
+  ##  - Persistent settings on rebuild via Home Manager
+  ##
+  ## Works well under Wayland/Hyprland environments.
   ##########################################
 
   programs.firefox = {
     enable = true;
-    package = pkgs.firefox; # or pkgs.firefox-bin
+    package = pkgs.firefox;  # You can switch to `pkgs.firefox-bin` for faster startup
 
     profiles.default = {
       id = 0;
@@ -24,43 +26,52 @@
       ########################################
       ## Preferences
       ########################################
+      ## These map directly to Firefox's about:config options.
+      ## Customize UI, behavior, privacy, and performance here.
+      ########################################
       settings = {
         # --- UI / Appearance ---
-        "browser.startup.page" = 3;               # restore previous session
-        "browser.tabs.drawInTitlebar" = true;     # hide system titlebar
+        "browser.startup.page" = 3;               # Restore previous session on startup
+        "browser.tabs.drawInTitlebar" = true;     # Hide OS titlebar for compact tabs
         "browser.theme.dark-private-windows" = true;
         "extensions.activeThemeID" = "firefox-compact-dark@mozilla.org";
-        "layout.css.prefers-color-scheme.content-override" = 0; # follow system theme
+        "layout.css.prefers-color-scheme.content-override" = 0; # Follow system theme (light/dark)
 
-        # Show the Bookmarks Toolbar (always/newtab/never)
+        # Show the Bookmarks Toolbar ("always", "newtab", or "never")
         "browser.toolbars.bookmarks.visibility" = "always";
 
         # --- Performance / Wayland VAAPI ---
-        "gfx.webrender.all" = true;
-        "media.ffmpeg.vaapi.enabled" = true;
-        "widget.dmabuf.force-enabled" = true;
+        "gfx.webrender.all" = true;               # Enable GPU rendering
+        "media.ffmpeg.vaapi.enabled" = true;      # Hardware video decoding
+        "widget.dmabuf.force-enabled" = true;     # Force DMA-BUF for Wayland acceleration
 
         # --- Privacy / Usability ---
-        "privacy.trackingprotection.enabled" = true;
-        "network.cookie.cookieBehavior" = 1;      # block 3rd-party cookies
-        "signon.rememberSignons" = false;         # don’t save passwords
-        "privacy.resistFingerprinting" = false;   # keep normal scaling/UX
-        "privacy.clearOnShutdown.history" = false;
+        "privacy.trackingprotection.enabled" = true;   # Enable tracking protection
+        "network.cookie.cookieBehavior" = 1;           # Block 3rd-party cookies
+        "signon.rememberSignons" = false;              # Don’t save passwords
+        "privacy.resistFingerprinting" = false;        # Allow normal DPI scaling
+        "privacy.clearOnShutdown.history" = false;     # Keep history on exit
 
-        "general.smoothScroll" = true;
-        "browser.download.useDownloadDir" = true;
-        "browser.shell.checkDefaultBrowser" = false;
-        "browser.startup.homepage" = "https://startpage.com/";
+        # --- Miscellaneous Tweaks ---
+        "general.smoothScroll" = true;                 # Smooth scrolling
+        "browser.download.useDownloadDir" = true;      # Save files to default folder
+        "browser.shell.checkDefaultBrowser" = false;   # Disable “default browser” prompt
+        "browser.startup.homepage" = "https://startpage.com/"; # Custom homepage
       };
 
       ########################################
-      ## Bookmarks (toolbar-enabled)
+      ## Bookmarks (Toolbar Enabled)
+      ########################################
+      ## Declarative bookmarks follow the new Home Manager schema:
+      ##   programs.firefox.profiles.<name>.bookmarks = { force; settings = [ … ]; }
+      ## A folder with `toolbar = true` places its entries on the
+      ## visible Bookmarks Toolbar.
       ########################################
       bookmarks = {
-        force = true;  # overwrite manual changes on rebuild
+        force = true;  # Overwrite manual changes on rebuild
         settings = [
           {
-            # Everything inside appears on the Bookmarks Toolbar
+            # Everything inside this folder appears in the Bookmarks Toolbar
             name = "Toolbar";
             toolbar = true;
 
@@ -81,22 +92,26 @@
       };
 
       ########################################
-      ## Extensions (requires NUR overlay in HM)
+      ## Extensions
       ########################################
-      # Ensure Home Manager has:
-      #   nixpkgs.overlays = [ inputs.nur.overlays.default ];
+      ## Declarative extension configuration uses the `.packages` attribute.
+      ## Requires NUR overlay: `nixpkgs.overlays = [ inputs.nur.overlays.default ];`
+      ########################################
       extensions.packages = with pkgs.nur.repos.rycee.firefox-addons; [
-        ublock-origin
-        darkreader
-        bitwarden
-        vimium
-        sponsorblock
+        ublock-origin      # Ad blocker
+        darkreader         # Dark mode on all sites
+        bitwarden          # Password manager
+        vimium             # Vim-style key navigation
+        sponsorblock       # Skip YouTube sponsor segments
       ];
     };
   };
 
   ##########################################
-  ## Wayland environment (per user)
+  ## Wayland Environment Variables
+  ##########################################
+  ## Ensures Firefox uses native Wayland backend
+  ## instead of the XWayland fallback.
   ##########################################
   home.sessionVariables.MOZ_ENABLE_WAYLAND = "1";
 }
