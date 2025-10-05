@@ -12,10 +12,10 @@
       ##########################################
       monitor = [
         # Built-in laptop display (top)
-        "desc:BOE NE160QDM-NM4, 2560x1600@240, 640x0, 1.6"
+        "desc:BOE NE160QDM-NM4, 2560x1600@240, 640x0, 1.2"
 
         # External display (bottom)
-        "desc:BOE 0x0A68, 3840x1100@60, 0x1600, 2.0"
+        "desc:BOE 0x0A68, 3840x1100@60, 0x1600, 1.2"
       ];
 
       ##########################################
