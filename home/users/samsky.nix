@@ -9,7 +9,7 @@
     ../modules/hyprland.nix
 
     # Import nixvim’s Home Manager module
-    inputs.nixvim.homeManagerModules.nixvim
+    inputs.nixvim.homeModules.nixvim
   ];
 
   home.username = defaultUser;
