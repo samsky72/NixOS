@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, hostName, ... }:
 {
   programs.nixvim = {
     enable = true;
@@ -49,12 +49,12 @@
     plugins = {
       # Explicit devicons (silences the deprecation warning)
       web-devicons.enable = true;
-
+      indent-blankline.enable = true;
       lualine.enable = true;
       telescope.enable = true;
       nvim-tree.enable = true;
       nvim-autopairs.enable = true;
-
+      colorizer.enable = true;
       treesitter = {
         enable = true;
         settings = {
@@ -68,7 +68,31 @@
       lsp = {
         enable = true;
         servers = {
-          nixd.enable = true;
+          nixd = {
+            enable = true;
+            settings = {
+              nixd = {
+                # Formatter
+                formatting.command = [ "nixpkgs-fmt" ];
+
+                # Evaluate nixpkgs from your flake input
+                nixpkgs.expr = ''(import (builtins.getFlake ".").inputs.nixpkgs { })'';
+
+                # NixOS options scope for your host (uses `hostName` passed via extraSpecialArgs)
+                options.nixos.expr =
+                  ''(builtins.getFlake ".").nixosConfigurations.${hostName}.options'';
+
+                # Home Manager options scope under that host:
+                # This pulls the *schema* under home-manager.users, which gives nixd rich HM completions.
+                options.home_manager_users.expr =
+                  ''(builtins.getFlake ".").nixosConfigurations.${hostName}.options.home-manager.users.type.getSubOptions []'';
+
+                # (Optional) quiet down some noisy diags
+                diagnostics.suppress = [ "unused_binding" "unused_with" ];
+              };
+            };
+          };
+
           lua_ls.enable = true;
           pyright.enable = true;
           ts_ls.enable = true;          # <- renamed from tsserver/ts-ls
