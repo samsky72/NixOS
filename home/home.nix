@@ -24,7 +24,7 @@
     ./modules/nixvim.nix     # NixVim setup (via Home Manager)
     ./modules/hyprland.nix   # Hyprland compositor (Wayland)
     ./modules/firefox.nix
-
+    ./modules/waybar.nix
     ##########################################
     ## Per-user configuration
     ##########################################
