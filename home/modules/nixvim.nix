@@ -92,7 +92,6 @@
               };
             };
           };
-
           lua_ls.enable = true;
           pyright.enable = true;
           ts_ls.enable = true;          # <- renamed from tsserver/ts-ls
@@ -121,9 +120,9 @@
           snippet = { expand = "luasnip"; };
           sources = [
             { name = "nvim_lsp"; }
-            { name = "buffer"; }
+            { name = "luasnip";}
             { name = "path"; }
-            { name = "luasnip"; }
+            { name = "buffer"; }
           ];
           mapping = {
             "<C-Space>" = "cmp.mapping.complete()";
