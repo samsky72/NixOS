@@ -50,5 +50,11 @@
     libva-utils         # VA-API video acceleration tools
     v4l-utils           # video4linux (webcam utilities)
   ];
+  fonts = {
+    fontconfig.enable = true;
+    packages = with pkgs;[
+      nerd-fonts.jetbrains-mono
+    ];
+  };
 }
 
