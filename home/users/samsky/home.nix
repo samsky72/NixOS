@@ -26,6 +26,7 @@
     ../../modules/stylix-targets.nix
     ../../modules/mpv-vapoursynth.nix
     ../../modules/pentest.nix
+    ../../modules/udiskie.nix
   ];
 }
 
