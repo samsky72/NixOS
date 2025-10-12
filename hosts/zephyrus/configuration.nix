@@ -41,7 +41,7 @@
     ../../modules/games.nix      # Steam/Lutris/Heroic, Proton, MangoHud, Wine
 
     ../../modules/virtualisation.nix
-
+    ../../modules/office.nix
   ];
 
   ##########################################
