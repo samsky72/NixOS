@@ -64,8 +64,8 @@
             name = "Toolbar";
             toolbar = true;  # render on visible Bookmarks Toolbar
             bookmarks = [
-              { name = "NixOS";       url = "https://nixos.org";                 keyword = "nix"; }
-              { name = "My GitHub";   url = "https://github.com/${defaultUser}"; }
+              { name = "NixOS"; url = "https://nixos.org"; keyword = "nix"; }
+              { name = "My GitHub";   url = "https://github.com/samsky72"; }
               { name = "My NixOS";  url = "https://mynixos.com"; }
               "separator"
               {
