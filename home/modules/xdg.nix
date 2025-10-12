@@ -54,17 +54,17 @@
   # If I want Home Manager to manage ~/.config/mimeapps.list, I can enable this.
   # I’ll only set defaults for apps I actually have installed to avoid broken entries.
   #
-  # xdg.mimeApps = {
-  #   enable = true;
-  #   defaultApplications = {
+  xdg.mimeApps = {
+    enable = true;
+    defaultApplications = {
   #     "text/plain"              = [ "nvim.desktop" ];                  # or "org.kde.kate.desktop"
   #     "inode/directory"         = [ "org.gnome.Nautilus.desktop" ];    # or "thunar.desktop"
   #     "application/pdf"         = [ "org.gnome.Evince.desktop" ];      # or "org.kde.okular.desktop"
   #     "image/png"               = [ "imv.desktop" ];                   # or "org.gnome.Loupe.desktop"
-  #     "video/mp4"               = [ "mpv.desktop" ];
-  #     "x-scheme-handler/http"   = [ "chromium.desktop" ];              # or "firefox.desktop"
-  #     "x-scheme-handler/https"  = [ "chromium.desktop" ];
-  #   };
-  # };
+      "video/*"                   = [ "mpv.desktop" ];
+      "x-scheme-handler/http"     = [ "firefox.desktop" ];              # or "firefox.desktop"
+      "x-scheme-handler/https"    = [ "firefox.desktop" ];
+    };
+  };
 }
 
