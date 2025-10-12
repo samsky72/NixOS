@@ -22,7 +22,6 @@
   ##########################################
   home.packages = with pkgs; [
     udiskie          # CLI client handy for manual control/logging
-    lxqt.pcmanfm-qt  # lightweight file manager that plays nicely with gvfs
   ];
 }
 
