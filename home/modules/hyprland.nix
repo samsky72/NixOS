@@ -3,6 +3,7 @@
 {
   wayland.windowManager.hyprland = {
     enable = true;
+    xwayland.enable = true;
 
     settings = {
       ##########################################
@@ -78,13 +79,11 @@
       ##########################################
       ## Window rules — app-to-workspace placement
       ##########################################
-      # `silent` prevents focus stealing when the app spawns.
       windowrulev2 = [
         # Firefox → workspace 2
         "workspace 2 silent, class:^(firefox)$"
 
-        # Steam → workspace 4
-        # Steam has multiple helper processes; include them so the main UI lands on ws4.
+        # Steam → workspace 4 (cover helpers too)
         "workspace 4 silent, class:^(Steam|steam|steamwebhelper)$"
       ];
 
@@ -97,7 +96,8 @@
         # Launchers / actions
         "$mod, RETURN, exec, kitty"
         "$mod, Q, killactive,"
-        "$mod, F, fullscreen, 0"
+        "$mod, F, fullscreen, 0"          # true fullscreen
+        "$mod, M, fullscreen, 1"          # ← maximize-style (fake fullscreen)
         "$mod, R, exec, fuzzel"
         "$mod, E, exec, thunar"
         "$mod, P, exec, grim -g \"$(slurp)\" ~/Pictures/Screenshots/shot-$(date +%s).png"

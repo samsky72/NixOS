@@ -1,66 +1,38 @@
 # modules/multimedia.nix
-# =============================================================================
-# Multimedia stack (audio/video/codecs) with PipeWire + GStreamer + VA-API.
-#
-# Goals:
-# - Modern audio via PipeWire/WirePlumber (PulseAudio/JACK compatibility).
-# - Hardware-accelerated video via the new `hardware.graphics.*` options.
-# - Broad codec support (GStreamer bundles + ffmpeg) and useful CLIs.
-# - Nerd Font for terminals/editors that benefit from icon glyphs.
-#
-# Note:
-# - This module uses ONLY `hardware.graphics.*` (no legacy `hardware.opengl.*`).
-# =============================================================================
-{ pkgs, ... }:
-{
+{ pkgs, ... }: {
+  ##########################################
+  ## Multimedia Configuration
+  ##
+  ## I enable PipeWire (with Pulse/JACK shims) and install a solid
+  ## audio/video toolset, codecs, and a few desktop players.
+  ##########################################
+
   ##########################################
   ## Audio: PipeWire + WirePlumber
   ##########################################
-
-  # Allow real-time scheduling for smoother audio under load.
-  security.rtkit.enable = true;
-
-  # PipeWire server + WirePlumber session manager with PA/JACK/ALSA compatibility.
   services.pipewire = {
     enable = true;
-
-    pulse.enable = true;   # for PulseAudio clients
-    jack.enable  = true;   # for JACK-aware apps
-
-    alsa = {
-      enable = true;       # ALSA support
-      support32Bit = true; # 32-bit ALSA for legacy/games (e.g., Steam/Wine)
-    };
-
-    wireplumber.enable = true;  # explicit for clarity
+    alsa.enable = true;             # ALSA compatibility
+    alsa.support32Bit = true;       # for 32-bit apps (e.g. Steam)
+    pulse.enable = true;            # PulseAudio compatibility
+    jack.enable = true;             # JACK shim for pro-audio apps
   };
 
   ##########################################
-  ## Video Acceleration (VA-API/VDPAU/OpenGL)
-  ##########################################
-  hardware.graphics = {
-    enable = true;     # replaces the old hardware.opengl.enable
-    enable32Bit = true;# 32-bit DRI for 32-bit apps (Steam/Wine)
-
-    # If your GPU stack needs VA-API/VDPAU translation layers, uncomment:
-    # extraPackages = with pkgs; [ vaapiVdpau libvdpau-va-gl ];
-    # extraPackages32 = with pkgs.pkgsi686Linux; [ vaapiVdpau libvdpau-va-gl ];
-  };
-
-  ##########################################
-  ## Multimedia tools & codecs
+  ## Video & Codec Support + Players
   ##########################################
   environment.systemPackages = with pkgs; [
-    # ---- Audio tools ----
-    alsa-utils              # alsamixer, aplay/arecord, speaker-test
+    # ---- Core playback / tools ----
+    audacity
+    mpv                 # lean, HW-accelerated media player
+    smplayer            # GUI front-end for mpv (requested)
+    strawberry          # music player / library (requested)
+    spotify             # Spotify desktop client (unfree; flake allows it)
 
-    # ---- Players & transcoders ----
-    mpv                     # robust media player (VA-API-enabled build)
-    ffmpeg                  # encode/decode/transcode swiss army knife
-    yt-dlp                  # video downloader (YouTube & many sites)
+    ffmpeg              # essential multimedia CLI tool
+    yt-dlp              # modern youtube-dl fork
 
-    # ---- GStreamer codec stacks ----
-    # base/good: common codecs; bad/ugly: extended formats; libav: ffmpeg bridge
+    # ---- GStreamer stack (many apps rely on these) ----
     gst_all_1.gstreamer
     gst_all_1.gst-plugins-base
     gst_all_1.gst-plugins-good
@@ -68,16 +40,16 @@
     gst_all_1.gst-plugins-ugly
     gst_all_1.gst-libav
 
-    # ---- Video acceleration & camera tooling ----
-    libva-utils             # `vainfo` to inspect VA-API setup
-    v4l-utils               # v4l2-ctl, qv4l2 (webcam controls/tests)
+    # ---- HW accel / camera utils ----
+    libva-utils         # VA-API tools (vainfo)
+    v4l-utils           # video4linux (webcam utilities)
 
-    # (Optional) streaming/capture:
-    # obs-studio
+    # ---- Audio utilities ----
+    alsa-utils          # alsamixer, aplay, etc.
   ];
 
   ##########################################
-  ## Fonts (Nerd Font for terminals/editors)
+  ## Fonts (icons for prompts/players)
   ##########################################
   fonts = {
     fontconfig.enable = true;
@@ -90,15 +62,15 @@
   ## Tips (GPU / Pro-audio / DRM) — optional
   ##########################################
   # NVIDIA:
-  #   - On proprietary drivers you may need VDPAU/VA-API shims:
+  #   - On proprietary drivers I may need VDPAU/VA-API shims:
   #       hardware.graphics.extraPackages = with pkgs; [ vaapiVdpau libvdpau-va-gl ];
-  #   - Ensure services.xserver.videoDrivers includes "nvidia" in your host config.
+  #   - Ensure services.xserver.videoDrivers includes "nvidia" in the host config.
   #
   # AMD/Intel:
   #   - `libva-utils: vainfo` should show a working driver (radeonsi for AMD, iHD/i965 for Intel).
   #
   # Pro-audio/JACK:
-  #   - JACK shim is enabled. For ultra-low latency, also tune CPU governor/IRQ;
+  #   - JACK shim is enabled. For ultra-low latency, I also tune CPU governor/IRQ;
   #     rtkit already grants RT priorities.
   #
   # Browser DRM (Widevine):

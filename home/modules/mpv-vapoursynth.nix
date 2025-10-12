@@ -40,10 +40,11 @@ in
     # If I want a toggle key instead of always-on, remove the `vf` line and
     # add a binding below (see the commented binding).
     config = {
-      profile = "gpu-hq";
-      hwdec = "auto-safe";
-      osd-level = 1;
-      ytdl = "yes";
+      #      profile = "vaapi";
+      #gpu-context = "wayland";
+      #hwdec = "auto-safe";
+      #osd-level = 1;
+      #ytdl = "yes";
       # Always-on interpolation via my VS script (see mvt.vpy below).
       vf = "format=yuv420p,vapoursynth=~~/mvt.vpy:4:4";
     };
@@ -57,6 +58,9 @@ in
   home.packages = [
     vsWithMvtools
     pkgs.yt-dlp
+    (pkgs.writeShellScriptBin "smplayer" ''
+      exec env QT_QPA_PLATFORM=xcb ${pkgs.smplayer}/bin/smplayer "$@"
+    '')
   ];
 
   # Updated VapourSynth script: removed 1080p/size limit; I only skip if >70 fps.

@@ -10,25 +10,21 @@
   ##########################################
 
   # Enable the Hyprland compositor (Wayland-native window manager)
-  programs.hyprland.enable = true;
+  programs.hyprland ={
+    enable = true;
+    xwayland.enable = true;
+  };
+
+  services.xserver.enable = true;
+  programs.xwayland.enable = true;
 
   ##########################################
   ## Login Manager — greetd + tuigreet
   ##########################################
   # greetd is a simple display/login manager that runs a chosen
   # TUI or GUI greeter; tuigreet provides a minimal terminal-based UI.
-  services.greetd = {
+  services.displayManager.gdm = {
     enable = true;
-    settings = {
-      default_session = {
-        # Launch tuigreet, showing time, remembering the last user,
-        # and automatically starting Hyprland on successful login.
-        command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --cmd Hyprland";
-
-        # Auto-fill this user as the default login account.
-        user = defaultUser;
-      };
-    };
   };
 
   ##########################################
