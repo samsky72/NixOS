@@ -9,7 +9,7 @@
   hardware.graphics = {
     enable = true;
     extraPackages = with pkgs; [
-      mesa.drivers
+      mesa
       vulkan-loader
       vulkan-validation-layers
       # Optional: vendor-specific layers (uncomment as needed)

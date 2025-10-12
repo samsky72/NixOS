@@ -1,33 +1,33 @@
+# home/modules/hyprland.nix
 { config, lib, pkgs, ... }:
 {
-  ##########################################
-  ## Hyprland (user-level configuration)
-  ##########################################
   wayland.windowManager.hyprland = {
     enable = true;
 
     settings = {
       ##########################################
-      ## Monitors — layout by description
+      ## Monitors — by DESCRIPTION, scale = 1.0
+      ## (Replace descriptions with exact strings from `hyprctl monitors`)
       ##########################################
       monitor = [
-        # Built-in laptop display (top)
-        "desc:BOE NE160QDM-NM4, 2560x1600@240, 640x0, 1.2"
-
-        # External display (bottom)
-        "desc:BOE 0x0A68, 3840x1100@60, 0x1600, 1.2"
+        "desc:BOE NE160QDM-NM4, 2560x1600@240, 640x0, 1.0"  # laptop (top)
+        "desc:BOE 0x0A68,      3840x1100@60,  0x1600, 1.0"  # external (bottom)
       ];
 
       ##########################################
       ## Input
       ##########################################
       input = {
-        kb_layout = "us,ru";
+        kb_layout  = "us,ru";
         kb_options = "grp:win_space_toggle";
         follow_mouse = 1;
+
         touchpad = {
           natural_scroll = true;
-          tap-to-click = true;
+          tap-to-click = true;        # correct key
+          clickfinger_behavior = true;
+          tap_button_map = "lrm";
+          disable_while_typing = true;
         };
       };
 
@@ -65,12 +65,36 @@
       };
 
       ##########################################
-      ## Keybindings — arrow-key driven
+      ## Persistent workspaces bound by DESCRIPTION
+      ## 1,2 → laptop; 3,4 → external
+      ##########################################
+      workspace = [
+        "1, monitor:desc:BOE NE160QDM-NM4, persistent:true, default:true"
+        "2, monitor:desc:BOE NE160QDM-NM4, persistent:true"
+        "3, monitor:desc:BOE 0x0A68,      persistent:true, default:true"
+        "4, monitor:desc:BOE 0x0A68,      persistent:true"
+      ];
+
+      ##########################################
+      ## Window rules — app-to-workspace placement
+      ##########################################
+      # `silent` prevents focus stealing when the app spawns.
+      windowrulev2 = [
+        # Firefox → workspace 2
+        "workspace 2 silent, class:^(firefox)$"
+
+        # Steam → workspace 4
+        # Steam has multiple helper processes; include them so the main UI lands on ws4.
+        "workspace 4 silent, class:^(Steam|steam|steamwebhelper)$"
+      ];
+
+      ##########################################
+      ## Keybindings
       ##########################################
       "$mod" = "SUPER";
 
       bind = [
-        # --- Launch / actions ---
+        # Launchers / actions
         "$mod, RETURN, exec, kitty"
         "$mod, Q, killactive,"
         "$mod, F, fullscreen, 0"
@@ -79,24 +103,36 @@
         "$mod, P, exec, grim -g \"$(slurp)\" ~/Pictures/Screenshots/shot-$(date +%s).png"
         "$mod, L, exec, loginctl lock-session"
 
-        # --- Focus movement (arrow keys) ---
+        # Focus by arrows
         "$mod, LEFT,  movefocus, l"
         "$mod, RIGHT, movefocus, r"
         "$mod, UP,    movefocus, u"
         "$mod, DOWN,  movefocus, d"
 
-        # --- Move windows (Mod+Shift + arrows) ---
+        # Move windows (Shift+arrows)
         "$mod SHIFT, LEFT,  movewindow, l"
         "$mod SHIFT, RIGHT, movewindow, r"
         "$mod SHIFT, UP,    movewindow, u"
         "$mod SHIFT, DOWN,  movewindow, d"
 
-        # --- Workspace scrolling with mouse wheel ---
+        # Workspace scroll
         "$mod, mouse_up,   workspace, e+1"
         "$mod, mouse_down, workspace, e-1"
+
+        # Jump to workspace 1–4
+        "$mod, 1, workspace, 1"
+        "$mod, 2, workspace, 2"
+        "$mod, 3, workspace, 3"
+        "$mod, 4, workspace, 4"
+
+        # Move window to workspace 1–4
+        "$mod SHIFT, 1, movetoworkspace, 1"
+        "$mod SHIFT, 2, movetoworkspace, 2"
+        "$mod SHIFT, 3, movetoworkspace, 3"
+        "$mod SHIFT, 4, movetoworkspace, 4"
       ];
 
-      # --- Resize windows (Mod+Ctrl + arrows, continuous) ---
+      # Resize with Mod+Ctrl+arrows (continuous)
       binde = [
         "$mod CTRL, LEFT,  resizeactive, -20 0"
         "$mod CTRL, RIGHT, resizeactive,  20 0"
@@ -104,14 +140,14 @@
         "$mod CTRL, DOWN,  resizeactive,  0  20"
       ];
 
-      # --- Mouse bindings ---
+      # Mouse binds
       bindm = [
-        "$mod, mouse:272, movewindow"   # Mod + LMB → move window
-        "$mod, mouse:273, resizewindow" # Mod + RMB → resize window
+        "$mod, mouse:272, movewindow"
+        "$mod, mouse:273, resizewindow"
       ];
 
       ##########################################
-      ## Autostart (minimal, no Waybar/applets)
+      ## Autostart
       ##########################################
       exec-once = [
         "Waybar"
@@ -122,13 +158,13 @@
     };
 
     extraConfig = ''
-      # Example extra rules:
+      # Example:
       # windowrule = float,^(pavucontrol)$
     '';
   };
 
   ##########################################
-  ## Wallpaper (hyprpaper)
+  ## Wallpaper (hyprpaper) — by DESCRIPTION
   ##########################################
   services.hyprpaper = {
     enable = true;
@@ -145,22 +181,11 @@
   };
 
   ##########################################
-  ## Utilities & Wayland helpers
+  ## Helpers
   ##########################################
-  programs.fuzzel.enable = true; # app launcher
+  programs.fuzzel.enable = true;
+  home.packages = with pkgs; [ kitty xfce.thunar grim slurp wl-clipboard cliphist ];
 
-  home.packages = with pkgs; [
-    kitty
-    xfce.thunar
-    grim
-    slurp
-    wl-clipboard
-    cliphist
-  ];
-
-  ##########################################
-  ## Environment variables for Wayland
-  ##########################################
   home.sessionVariables = {
     XDG_SESSION_TYPE = "wayland";
     MOZ_ENABLE_WAYLAND = "1";
@@ -168,3 +193,4 @@
     NIXOS_OZONE_WL = "1";
   };
 }
+

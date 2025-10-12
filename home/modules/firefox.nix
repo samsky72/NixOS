@@ -1,83 +1,72 @@
 # home/modules/firefox.nix
-{ pkgs, ... }:
+# =============================================================================
+# Firefox (Home Manager) — flake-unified, declarative, Wayland/VAAPI ready
+#
+# - I bind the Firefox profile name to `defaultUser` from my flake.
+# - I use the refactored bookmarks submodule (requires `force = true;`).
+# - I use the current extensions schema (`extensions.packages`).
+# - I tell Stylix which Firefox profile(s) to theme to silence its warning.
+# =============================================================================
+{ pkgs, defaultUser, colorScheme, ... }:
 {
-  ##########################################
-  ## Firefox Configuration (Home Manager)
-  ##########################################
-  ##
-  ## This module provides a fully declarative Firefox setup with:
-  ##  - GPU acceleration (Wayland + VAAPI tweaks)
-  ##  - Privacy-friendly and ergonomic defaults
-  ##  - Declarative bookmarks and extensions (per-profile)
-  ##  - Persistent settings on rebuild via Home Manager
-  ##
-  ## Works well under Wayland/Hyprland environments.
-  ##########################################
-
   programs.firefox = {
     enable = true;
-    package = pkgs.firefox;  # You can switch to `pkgs.firefox-bin` for faster startup
 
-    profiles.default = {
+    # I can switch to pkgs.firefox-bin if I prefer Mozilla’s binary build.
+    package = pkgs.firefox;
+
+    profiles."${defaultUser}" = {
       id = 0;
-      name = "default";
+      name = defaultUser;   # <- this is the profile name Stylix needs
       isDefault = true;
 
       ########################################
-      ## Preferences
-      ########################################
-      ## These map directly to Firefox's about:config options.
-      ## Customize UI, behavior, privacy, and performance here.
+      ## Preferences (about:config)
       ########################################
       settings = {
         # --- UI / Appearance ---
-        "browser.startup.page" = 3;               # Restore previous session on startup
-        "browser.tabs.drawInTitlebar" = true;     # Hide OS titlebar for compact tabs
+        "browser.startup.page" = 3;                 # restore previous session
+        "browser.tabs.drawInTitlebar" = true;       # compact tabs (no OS titlebar)
         "browser.theme.dark-private-windows" = true;
         "extensions.activeThemeID" = "firefox-compact-dark@mozilla.org";
-        "layout.css.prefers-color-scheme.content-override" = 0; # Follow system theme (light/dark)
-
-        # Show the Bookmarks Toolbar ("always", "newtab", or "never")
+        # Follow my system theme for page content (0=system, 1=light, 2=dark)
+        "layout.css.prefers-color-scheme.content-override" = 0;
+        # Always show bookmarks toolbar
         "browser.toolbars.bookmarks.visibility" = "always";
 
-        # --- Performance / Wayland VAAPI ---
-        "gfx.webrender.all" = true;               # Enable GPU rendering
-        "media.ffmpeg.vaapi.enabled" = true;      # Hardware video decoding
-        "widget.dmabuf.force-enabled" = true;     # Force DMA-BUF for Wayland acceleration
+        # --- Wayland + VAAPI / Performance ---
+        "gfx.webrender.all" = true;                 # GPU compositor
+        "widget.dmabuf.force-enabled" = true;       # Wayland DMA-BUF fast path
+        "media.ffmpeg.vaapi.enabled" = true;        # VAAPI decode
+        "media.hardware-video-decoding.enabled" = true;
 
         # --- Privacy / Usability ---
-        "privacy.trackingprotection.enabled" = true;   # Enable tracking protection
-        "network.cookie.cookieBehavior" = 1;           # Block 3rd-party cookies
-        "signon.rememberSignons" = false;              # Don’t save passwords
-        "privacy.resistFingerprinting" = false;        # Allow normal DPI scaling
-        "privacy.clearOnShutdown.history" = false;     # Keep history on exit
+        "privacy.trackingprotection.enabled" = true;
+        "network.cookie.cookieBehavior" = 1;        # block 3rd-party cookies
+        "signon.rememberSignons" = false;           # don’t save passwords
+        "privacy.resistFingerprinting" = false;     # keep normal DPI/UX scaling
+        "privacy.clearOnShutdown.history" = false;  # keep history on exit
 
-        # --- Miscellaneous Tweaks ---
-        "general.smoothScroll" = true;                 # Smooth scrolling
-        "browser.download.useDownloadDir" = true;      # Save files to default folder
-        "browser.shell.checkDefaultBrowser" = false;   # Disable “default browser” prompt
-        "browser.startup.homepage" = "https://startpage.com/"; # Custom homepage
+        # --- Misc ---
+        "general.smoothScroll" = true;
+        "browser.download.useDownloadDir" = true;
+        "browser.shell.checkDefaultBrowser" = false;
+        "browser.startup.homepage" = "https://startpage.com/";
       };
 
       ########################################
-      ## Bookmarks (Toolbar Enabled)
-      ########################################
-      ## Declarative bookmarks follow the new Home Manager schema:
-      ##   programs.firefox.profiles.<name>.bookmarks = { force; settings = [ … ]; }
-      ## A folder with `toolbar = true` places its entries on the
-      ## visible Bookmarks Toolbar.
+      ## Bookmarks (refactored submodule)
       ########################################
       bookmarks = {
-        force = true;  # Overwrite manual changes on rebuild
+        force = true;  # overwrite manual changes on rebuild
         settings = [
           {
-            # Everything inside this folder appears in the Bookmarks Toolbar
             name = "Toolbar";
-            toolbar = true;
-
+            toolbar = true;  # render on visible Bookmarks Toolbar
             bookmarks = [
-              { name = "NixOS";  url = "https://nixos.org"; keyword = "nix"; }
-              { name = "My GitHub"; url = "https://github.com/samsky72"; }
+              { name = "NixOS";       url = "https://nixos.org";                 keyword = "nix"; }
+              { name = "My GitHub";   url = "https://github.com/${defaultUser}"; }
+              { name = "My NixOS";  url = "https://mynixos.com"; }
               "separator"
               {
                 name = "Docs";
@@ -92,27 +81,39 @@
       };
 
       ########################################
-      ## Extensions
+      ## Extensions (current HM schema)
       ########################################
-      ## Declarative extension configuration uses the `.packages` attribute.
-      ## Requires NUR overlay: `nixpkgs.overlays = [ inputs.nur.overlays.default ];`
-      ########################################
+      # Requires NUR overlay enabled in my flake:
+      #   overlays = [ inputs.nur.overlays.default ];
       extensions.packages = with pkgs.nur.repos.rycee.firefox-addons; [
-        ublock-origin      # Ad blocker
-        darkreader         # Dark mode on all sites
-        bitwarden          # Password manager
-        vimium             # Vim-style key navigation
-        sponsorblock       # Skip YouTube sponsor segments
+        ublock-origin
+        darkreader
+        bitwarden
+        vimium
+        sponsorblock
       ];
     };
   };
 
   ##########################################
-  ## Wayland Environment Variables
+  ## Stylix — tell it which Firefox profile(s) to theme
   ##########################################
-  ## Ensures Firefox uses native Wayland backend
-  ## instead of the XWayland fallback.
+  # This silences: “stylix: firefox: profileNames is not set…”
+  stylix.targets.firefox.profileNames = [ defaultUser ];
+
   ##########################################
-  home.sessionVariables.MOZ_ENABLE_WAYLAND = "1";
+  ## Wayland environment for Firefox
+  ##########################################
+  # I force native Wayland backend (no XWayland).
+  home.sessionVariables = {
+    MOZ_ENABLE_WAYLAND = "1";
+  };
+
+  ##########################################
+  ## Optional: VAAPI diagnostics (commented)
+  ##########################################
+  # home.packages = with pkgs; [
+  #   libva-utils  # `vainfo` to verify VAAPI paths
+  # ];
 }
 

@@ -1,67 +1,103 @@
-{ pkgs, ... }:
+# home/modules/waybar.nix
+# =============================================================================
+# Waybar (Home Manager) — same size, bigger workspace icons, NEW icon set
+#
+# I keep the bar height the same and only change the workspace icons.
+# Current set: **NF roles** (terminal/web/files/steam).
+# Decoration for the **selected** workspace is removed (no bubble background).
+# =============================================================================
+{ pkgs, lib, colorScheme, ... }:
+let
+  withHash = v: if lib.hasPrefix "#" v then v else "#${v}";
+  p = lib.mapAttrs (_: withHash) colorScheme.palette;
+
+  bg      = p.base00;
+  bg2     = p.base01;
+  dim     = p.base03;
+  fg      = p.base05;
+  red     = p.base08;
+  yellow  = p.base0A;
+  blue    = p.base0D;
+  purple  = p.base0E;
+
+  ws_active_fg = purple;
+  ws_idle_fg   = blue;
+  ws_urgent_fg = red;
+
+  # Enlarge workspace icons only (bar height unchanged)
+  ws_icon_px = 20;
+
+  # --- Icon presets -----------------------------------------------------------
+  icons_black_circled = { "1" = "➊"; "2" = "➋"; "3" = "➌"; "4" = "➍"; default = "●"; };
+  icons_white_circled = { "1" = "①"; "2" = "②"; "3" = "③"; "4" = "④"; default = "○"; };
+  icons_plain_digits  = { "1" = "1";  "2" = "2";  "3" = "3";  "4" = "4";  default = "•"; };
+  icons_nf_roles      = { "1" = ""; "2" = ""; "3" = ""; "4" = ""; default = ""; };
+
+  # Active icon set:
+  ws_icons = icons_nf_roles;
+in
 {
-  ##########################################
-  ## Waybar (Home Manager)
-  ##########################################
   programs.waybar = {
     enable = true;
-
-    # Run Waybar as a user systemd service (starts on graphical session)
     systemd.enable = true;
 
-    # Main Waybar instance (single output by default; shows on all monitors)
     settings = [
       {
         layer = "top";
         position = "top";
-        height = 30;
-        margin = "6 6 0 6";     # top/right/bottom/left, leaves a nice gap
 
-        # Choose what to show
-        modules-left   = [ "hyprland/workspaces" "hyprland/language" "tray" ];
-        modules-center = [ "clock" ];
-        modules-right  = [ "cpu" "memory" "temperature" "pulseaudio" "network" "battery" "backlight" ];
+        # Bar size unchanged
+        height = 42;
+        margin = "10 10 0 10";
 
-        # --- Hyprland workspaces ---
+        modules-left   = [ "hyprland/workspaces" ];
+        modules-center = [ "hyprland/window" ];
+        modules-right  = [
+          "cpu" "memory" "temperature" "pulseaudio" "network" "battery" "backlight"
+          "clock" "hyprland/language" "tray"
+        ];
+
+        # Workspaces: same strip on both screens, icons applied
         "hyprland/workspaces" = {
-          # show all outputs so your dock is consistent
           all-outputs = true;
           format = "{icon}";
-          # Optional icons (1..10)
-          "format-icons" = {
-            "1" = "󰎤"; "2" = "󰎧"; "3" = "󰎪"; "4" = "󰎭"; "5" = "󰎱";
-            "6" = "󰎳"; "7" = "󰎶"; "8" = "󰎹"; "9" = "󰎼"; "10" = "󰽽";
-            default = "";
-            urgent  = "";
-            active  = "";
+          on-click = "hyprctl dispatch workspace {id}";
+          on-scroll-up = "hyprctl dispatch workspace e+1";
+          on-scroll-down = "hyprctl dispatch workspace e-1";
+
+          # If I want them visible even when empty:
+          # "persistent-workspaces" = { "*" = [ 1 2 3 4 ]; };
+
+          # Remove active icon override to avoid “decoration” changes
+          "format-icons" = ws_icons // {
+            urgent = "";
+            # active = "";  # ← removed to keep the same icon when selected
           };
         };
 
-        # --- Keyboard layout indicator (Hyprland) ---
-        "hyprland/language" = {
-          format = " {short}";
-          # Example: show “US”, “RU”
+        "hyprland/window" = {
+          format = "{}";
+          max-length = 100;
+          separate-outputs = false;
         };
 
-        # --- Clock ---
+        "hyprland/language" = { format = " {short}"; };
+
         clock = {
           format = "{:%a %d %b  %H:%M}";
           tooltip-format = "{:%Y-%m-%d %H:%M:%S}";
           interval = 1;
         };
 
-        # --- Audio (PipeWire via PulseAudio compat) ---
         pulseaudio = {
           format = "{icon} {volume}%";
           format-muted = "";
           "format-icons" = { default = [ "" "" "" ]; headphones = ""; };
-          # Click to open pavucontrol; scroll to adjust volume
           on-click = "pavucontrol";
           on-scroll-up = "pamixer -i 2";
           on-scroll-down = "pamixer -d 2";
         };
 
-        # --- Network ---
         network = {
           format-wifi = "  {essid} {signalStrength}%";
           format-ethernet = "󰈀  {ifname}";
@@ -70,7 +106,6 @@
           interval = 5;
         };
 
-        # --- Battery ---
         battery = {
           format = "{icon} {capacity}%";
           format-charging = " {capacity}%";
@@ -78,80 +113,76 @@
           states = { warning = 25; critical = 10; };
         };
 
-        # --- Backlight (scroll to change) ---
-        # If needed, set your device explicitly (e.g., "intel_backlight").
         backlight = {
           format = "󰃠 {percent}%";
           on-scroll-up   = "brightnessctl set +5%";
           on-scroll-down = "brightnessctl set 5%-";
-          # device = "intel_backlight";
         };
 
-        # --- CPU / RAM / Temp (nice quick glance) ---
-        cpu = { format = " {usage}%"; tooltip = true; };
-        memory = { format = " {used}GiB"; tooltip = true; };
-        temperature = {
-          format = " {temperatureC}°C";
-          critical-threshold = 85;
-        };
+        cpu         = { format = " {usage}%";         tooltip = true; };
+        memory      = { format = "󰍛 {used}GiB";        tooltip = true; };
+        temperature = { format = " {temperatureC}°C"; critical-threshold = 85; };
 
-        tray = { spacing = 8; };
+        tray = { spacing = 10; };
       }
     ];
 
-    # Tokyonight-ish minimal style (Waybar CSS)
     style = ''
       * {
         font-family: JetBrainsMono Nerd Font, monospace;
-        font-size: 12px;
+        font-size: 14px;   /* bar text size unchanged */
         min-height: 0;
       }
 
       window#waybar {
-        background: rgba(26, 27, 38, 0.8); /* tokyonight bg */
-        color: #c0caf5;                    /* tokyonight fg */
-        border-radius: 12px;
-        border: 1px solid rgba(80, 90, 120, 0.35);
+        background: ${bg};
+        color: ${fg};
+        border-radius: 14px;
+        border: 1px solid ${dim};
       }
 
+      /* Larger workspace icons ONLY — bar height remains 42px */
       #workspaces button {
-        padding: 0 8px;
-        color: #7aa2f7;
+        padding: 0 12px;               /* keep vertical size tight */
+        color: ${ws_idle_fg};
         background: transparent;
+        font-size: ${toString ws_icon_px}px;
       }
+
+      /* Selected workspace — no bubble/decoration */
       #workspaces button.active {
-        color: #bb9af7;
-        background: rgba(187, 154, 247, 0.12);
-        border-radius: 10px;
+        color: ${ws_active_fg};        /* keep a subtle color accent */
+        background: transparent;       /* remove background */
+        border-radius: 0;              /* remove rounded bubble */
+        font-weight: 500;              /* or 400 if you want zero emphasis */
+        box-shadow: none;              /* ensure no shadow glow */
       }
+
       #workspaces button.urgent {
-        color: #f7768e;
-        background: rgba(247, 118, 142, 0.15);
+        color: ${ws_urgent_fg};
+        background: ${bg2};
+        border-radius: 10px;
       }
 
       #tray, #clock, #cpu, #memory, #temperature, #pulseaudio,
-      #network, #battery, #backlight, #language {
-        padding: 0 10px;
+      #network, #battery, #backlight, #language, #window {
+        padding: 0 14px;
       }
 
-      #battery.warning { color: #e0af68; }
-      #battery.critical { color: #f7768e; }
+      #battery.warning  { color: ${yellow}; }
+      #battery.critical { color: ${red}; }
 
       tooltip {
-        background: #1f2335;
-        color: #c0caf5;
-        border: 1px solid #414868;
-        border-radius: 8px;
+        background: ${bg2};
+        color: ${fg};
+        border: 1px solid ${dim};
+        border-radius: 10px;
       }
     '';
   };
 
-  # Handy tools used by Waybar actions
   home.packages = with pkgs; [
-    brightnessctl   # for backlight scroll
-    pamixer         # for volume scroll (pulseaudio/pipewire)
-    pavucontrol     # audio panel on click
-    iw              # extra wifi info (optional)
+    brightnessctl pamixer pavucontrol iw lm_sensors
   ];
 }
 
