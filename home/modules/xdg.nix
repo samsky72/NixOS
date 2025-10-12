@@ -61,7 +61,7 @@
   #     "inode/directory"         = [ "org.gnome.Nautilus.desktop" ];    # or "thunar.desktop"
   #     "application/pdf"         = [ "org.gnome.Evince.desktop" ];      # or "org.kde.okular.desktop"
   #     "image/png"               = [ "imv.desktop" ];                   # or "org.gnome.Loupe.desktop"
-      "video/*"                   = [ "mpv.desktop" ];
+      "video/*"                   = [ "smplayer.desktop" ];
       "x-scheme-handler/http"     = [ "firefox.desktop" ];              # or "firefox.desktop"
       "x-scheme-handler/https"    = [ "firefox.desktop" ];
     };

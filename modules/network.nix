@@ -53,7 +53,6 @@
     iw             # Wireless interface management
   ];
 
-  # Enable Bluetooth network bridging
-  hardware.bluetooth.enable = true;
+  programs.kdeconnect.enable = true;
 }
 
