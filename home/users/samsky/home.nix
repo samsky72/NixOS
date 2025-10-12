@@ -24,6 +24,7 @@
     ../../modules/waybar.nix     # I configure Waybar
     ../../modules/zsh.nix        # I configure zsh
     ../../modules/stylix-targets.nix
+    ../../modules/mpv-vapoursynth.nix
   ];
 }
 
