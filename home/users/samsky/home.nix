@@ -27,6 +27,7 @@
     ../../modules/mpv-vapoursynth.nix
     ../../modules/pentest.nix
     ../../modules/udiskie.nix
+    ../../modules/thunar.nix
   ];
 }
 
