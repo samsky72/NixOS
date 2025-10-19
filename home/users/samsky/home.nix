@@ -30,6 +30,7 @@
       ../../modules/udiskie.nix          # I autostart udiskie for automounting
       ../../modules/thunar.nix           # I configure Thunar + plugins
       ../../modules/kdeconnect.nix
+      ../../modules/kde-integration.nix
     ]
     ++ lib.optionals (hostName == "zephyrus") [
       # I keep hardware-specific monitor mappings separate per host
