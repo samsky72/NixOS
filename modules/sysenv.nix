@@ -1,54 +1,49 @@
 # modules/sysenv.nix
 # =============================================================================
-# System Environment (shared defaults across hosts)
+# System environment (shared defaults across hosts)
 #
-# Goals:
-# - Centralize system-wide environment knobs that every host benefits from.
-# - Keep it KISS: clear structure, safe defaults, and easy host-level overrides.
-# - Provide a practical CLI baseline, consistent shell behavior, and well-documented
-#   aliases (including opinionated NixOS helpers with backup & cleanup flows).
+# Scope
+#   • Centralizes system-wide environment defaults
+#   • Provides a practical CLI baseline and consistent shell behavior
+#   • Supplies documented aliases, including NixOS helpers with backup/cleanup
 #
-# Inputs (via specialArgs in your flake):
-# - `locale`: { timeZone, defaultLocale, supportedLocales, xkb = { layout, options, ... } }
+# Inputs (via flake specialArgs)
+#   • locale: { timeZone, defaultLocale, supportedLocales, xkb = { layout, options, ... } }
 #
-# Overriding:
-# - Many options here use `lib.mkDefault` so a host-specific module can override
-#   without forcing `mkForce`. Treat this module as a sane “floor”, not a “ceiling”.
+# Notes
+#   • Uses lib.mkDefault for easy host overrides without mkForce.
+#   • Intended as a “floor” of sane defaults rather than a “ceiling”.
 # =============================================================================
 { lib, pkgs, locale, ... }:
 let
-  inherit (lib) mkDefault;
+  inherit (lib) mkDefault mkAfter;  # mkDefault → lower-priority defaults; mkAfter → append shell init
 in
 {
   ##########################################
-  ## Time, Locale, and Keyboard (from flake)
+  ## Time, locale, and keyboard (from flake)
   ##########################################
 
-  # Timezone is taken from the flake and can be overridden per host if you travel
-  # or for servers in other regions.
+  # Time zone (can be overridden per host if required).
   time.timeZone = mkDefault locale.timeZone;
 
-  # Locales: default LANG plus the set glibc should generate. Keep this lean:
-  # only generate the locales I’ll use to avoid long glibc activations.
+  # Default locale and the set of locales glibc should generate.
+  # Keeping this list lean speeds up activations.
   i18n.defaultLocale    = mkDefault locale.defaultLocale;
   i18n.supportedLocales = mkDefault locale.supportedLocales;
 
-  # Make virtual terminals (Linux console) respect XKB. This helps non-US layouts
-  # on TTYs (Ctrl+Alt+F1..F6) match my desktop/X/Wayland keyboard settings.
+  # Make virtual terminals (Linux console) follow XKB settings.
   console.useXkbConfig = true;
 
-  # XKB defaults for X11 and many Wayland compositors.
-  # If I define xkb.model/variant in the flake, I can also pass them through.
+  # XKB defaults for X11 and Wayland-aware compositors (model/variant optional).
   services.xserver.xkb = {
-    inherit (locale.xkb) layout options;
-    # inherit (locale.xkb) model variant;
+    inherit (locale.xkb) layout options; # e.g., "us,ru" and "grp:win_space_toggle"
+    # inherit (locale.xkb) model variant; # uncomment if provided in flake
   };
 
-  # Export XKB defaults for Wayland-aware / XDG-aware apps that honor env vars.
-  # This is helpful for tools that don’t read the NixOS xkb options directly.
+  # Export XKB defaults via environment for tools that read XKB_* vars.
   environment.sessionVariables = {
-    XKB_DEFAULT_LAYOUT  = locale.xkb.layout;
-    XKB_DEFAULT_OPTIONS = locale.xkb.options;
+    XKB_DEFAULT_LAYOUT  = locale.xkb.layout;   # default keyboard layout(s)
+    XKB_DEFAULT_OPTIONS = locale.xkb.options;  # default XKB options
     # XKB_DEFAULT_MODEL   = locale.xkb.model or "";
     # XKB_DEFAULT_VARIANT = locale.xkb.variant or "";
   };
@@ -56,130 +51,135 @@ in
   ##########################################
   ## System-wide CLI toolset
   ##########################################
-  # A curated baseline: modern ls/grep/find replacements, diagnostics, archivers,
-  # and common dev ergonomics. Trim or extend per taste.
+  # Curated baseline: shells, archives, diagnostics, monitors, and helpers.
+  # Each entry includes a short purpose note for quick recall.
   environment.systemPackages = with pkgs; [
-    ## shells & basics
-    bashInteractive
-    zsh
-    coreutils
-    findutils
-    gnugrep
-    gawk
-    gnused
+    # --- Shells & basics ---
+    bashInteractive        # interactive bash for login/shell switching
+    zsh                    # alternative interactive shell
+    coreutils              # GNU core utilities
+    findutils              # find/xargs
+    gnugrep                # grep with PCRE/color
+    gawk                   # awk implementation
+    gnused                 # sed implementation
 
-    ## file managers / TUI
-    mc
+    gcc                    # system C toolchain (headers/compilers)
 
-    ## archive / compression (rich CLI coverage)
-    zip unzip
-    xz
-    p7zip
-    zstd
-    gzip bzip2 lz4 lzip lrzip
-    libarchive
-    cabextract
-    unar
-    unrar
+    # --- TUI file manager ---
+    mc                     # Midnight Commander
 
-    ## networking & diagnostics
-    curl wget
-    git
-    iproute2 iputils
-    traceroute
-    dnsutils
-    nmap
+    # --- Archive / compression ---
+    zip unzip              # zip archives
+    xz                     # xz compression
+    p7zip                  # 7z/7zip formats
+    zstd                   # zstd compression
+    gzip bzip2             # gzip/bzip2 formats
+    lz4 lzip lrzip         # extra compressors
+    libarchive             # bsdtar and archive libs
+    cabextract             # Microsoft CAB files
+    unar                   # universal archive extractor
+    unrar                  # RAR extractor (non-free)
 
-    ## filesystem / process / monitoring
-    eza
-    tree
-    ripgrep
-    fd
-    du-dust
-    duf
-    procs
-    htop
-    lsof
-    ncdu
-    rsync
+    # --- Networking & diagnostics ---
+    curl wget              # HTTP(S) clients
+    git                    # VCS client
+    iproute2 iputils       # ip/ss + ping/tracepath
+    traceroute             # classic traceroute
+    dnsutils               # dig/nslookup
+    nmap                   # scanner + ncat
 
-    ## data wrangling
-    jq
-    yq-go
+    # --- Filesystem / process / monitoring ---
+    eza                    # modern ls
+    tree                   # directory tree
+    ripgrep                # fast grep
+    fd                     # modern find
+    du-dust                # disk usage (du replacement)
+    duf                    # disk free (df replacement)
+    procs                  # modern ps
+    htop                   # process viewer
+    lsof                   # open files listing
+    ncdu                   # interactive disk usage
+    rsync                  # file synchronization
 
-    ## misc
-    file
-    which
-    tokei
- 
-    udiskie
-    udevil
+    # --- Data wrangling ---
+    jq                     # JSON processor
+    yq-go                  # YAML processor (Go-based)
 
-    usbutils
-    psmisc
+    # --- Misc ---
+    file                   # file type detection
+    which                  # command resolver
+    tokei                  # code statistics
+
+    # --- Removable media helpers ---
+    udiskie                # user-space automounter
+    udevil                 # lightweight mount helpers
+
+    # --- USB / misc tools ---
+    usbutils               # lsusb
+    psmisc                 # pstree/killall/fuser
   ];
 
-  # Make zsh and bash available for login/shell switching (e.g., `chsh -s`).
+  # Make zsh and bash available as valid login shells (usable via `chsh -s`).
   environment.shells = with pkgs; [ zsh bashInteractive ];
 
-  # Enable system-level Zsh integration (completions, etc.). User-level specifics
-  # are in my Home Manager zsh module; this leaves the base ready system-wide.
+  # Enable system-level Zsh integration (completions, etc.); user-specific setup
+  # is typically handled in Home Manager.
   programs.zsh.enable = true;
 
   ##########################################
   ## Sensible environment variables
   ##########################################
-  # System defaults I expect on a developer machine and that work well for
-  # both console and GUI sessions. Use `mkDefault` so hosts can override easily.
+  # Defaults suitable for both TTY and GUI sessions. mkDefault allows overrides.
   environment.variables = {
-    EDITOR = mkDefault "nvim";
-    VISUAL = mkDefault "nvim";
-    PAGER  = mkDefault "less";
-    LESS   = mkDefault "-R --use-color -M --long-prompt --ignore-case";
-    LESSHISTFILE = mkDefault "-";
-    NIXOS_OZONE_WL = mkDefault "1";
-    LANG = mkDefault locale.defaultLocale;
+    EDITOR         = mkDefault "nvim";                     # default editor
+    VISUAL         = mkDefault "nvim";                     # default GUI editor
+    PAGER          = mkDefault "less";                     # pager
+    LESS           = mkDefault "-R --use-color -M --long-prompt --ignore-case"; # sane less flags
+    LESSHISTFILE   = mkDefault "-";                        # disable less history file
+    NIXOS_OZONE_WL = mkDefault "1";                        # Wayland for Chromium/Electron
+    LANG           = mkDefault locale.defaultLocale;       # ensure LANG matches defaultLocale
   };
 
   ##########################################
-  ## Global shell aliases (Bash & Zsh)
+  ## Unified aliases (Bash & Zsh)
   ##########################################
   environment.shellAliases = {
-    # ---------- Files & listings ----------
-    ls  = "eza --group-directories-first";
-    ll  = "eza -alh --group-directories-first --git";
-    la  = "eza -a";
-    l   = "eza -1";
-    lt  = "eza -T";
-    lS  = "eza -l --sort=size";
+    # Files & listings
+    ls  = "eza --group-directories-first";                # compact listing
+    ll  = "eza -alh --group-directories-first --git";     # long + hidden + git
+    la  = "eza -a";                                       # all, including dotfiles
+    l   = "eza -1";                                       # one entry per line
+    lt  = "eza -T";                                       # tree view
+    lS  = "eza -l --sort=size";                           # sort by size
 
-    # ---------- Search helpers ----------
-    rg  = ''rg -n --hidden --glob "!.git"'';
-    fd  = "fd --hidden --exclude .git";
+    # Search helpers
+    rg  = ''rg -n --hidden --glob "!.git"'';              # recursive search ignoring .git
+    fd  = "fd --hidden --exclude .git";                   # fast file finder
 
-    # ---------- QoL replacements ----------
-    grep = "grep --color=auto";
-    diff = "diff --color=auto";
-    ip   = "ip -c";
-    df   = "duf";
-    du   = "dust";
-    top  = "htop";
+    # QoL replacements
+    grep = "grep --color=auto";                           # colored grep
+    diff = "diff --color=auto";                           # colored diff
+    ip   = "ip -c";                                       # colored ip output
+    df   = "duf";                                         # df replacement
+    du   = "dust";                                        # du replacement
+    top  = "htop";                                        # top replacement
 
-    # ---------- Git short-hands ----------
-    gs = "git status -sb";
+    # Git short-hands
+    gs = "git status -sb";                                # concise status
     ga = "git add";
     gc = "git commit";
     gp = "git push";
     gl = "git log --oneline --graph --decorate";
 
-    # ---------- Safety nets ----------
-    rm = "rm -i";
-    cp = "cp -i";
-    mv = "mv -i";
+    # Safety nets
+    rm = "rm -i";                                         # confirm deletions
+    cp = "cp -i";                                         # confirm overwrites
+    mv = "mv -i";                                         # confirm overwrites
 
-    # ---------- NixOS helpers (KISS) ----------
-    system-rebuild = "sudo nixos-rebuild switch --flake .#$(hostname -s)";
+    # NixOS helpers
+    system-rebuild = "sudo nixos-rebuild switch --flake .#$(hostname -s)";  # rebuild current host
 
+    # Update flake with backup; restore lock on failure; then rebuild.
     system-update = ''
       sh -c 'ts=$(date +"%Y%m%d-%H%M%S"); bak="flake.lock.bak-$ts"; \
         [ -f flake.lock ] && cp -f flake.lock "$bak" || true; \
@@ -192,17 +192,16 @@ in
         fi'
     '';
 
-    # WARNING: This deletes ALL generations (root + user). Run when stable.
+    # WARNING: deletes ALL generations (root + user). Use only when safe.
     system-cleanup = "sudo nix-collect-garbage -d; nix-collect-garbage -d; nix store optimise -v";
   };
 
   ##########################################
-  ## Unified init for ALL interactive shells
+  ## Unified init for interactive shells
   ##########################################
-  # This runs for bash, zsh, etc. on interactive startup.
-  # By default, auto-cd to ~/NixOS if it exists (so I land in my repo).
-  # Set NO_AUTO_CD_NIXOS=1 to disable.
-  environment.interactiveShellInit = lib.mkAfter ''
+  # Executes for bash, zsh, etc. on interactive startup.
+  # Automatically cd into ~/NixOS if present; disable via NO_AUTO_CD_NIXOS=1.
+  environment.interactiveShellInit = mkAfter ''
     if [ -z "''${NO_AUTO_CD_NIXOS-}" ] && [ -d "$HOME/NixOS" ]; then
       cd "$HOME/NixOS"
     fi
@@ -211,8 +210,9 @@ in
   ##########################################
   ## PATH & profile tweaks
   ##########################################
-  environment.pathsToLink = [ "/share/zsh" ];
+  environment.pathsToLink = [ "/share/zsh" ];  # expose system zsh completions
 
+  # Lightweight PATH prepend for /usr/local/bin if it exists.
   environment.etc."profile.d/10-local-path.sh".text = ''
     if [ -d /usr/local/bin ]; then
       export PATH="/usr/local/bin:$PATH"
@@ -220,23 +220,20 @@ in
   '';
 
   ##########################################
-  ## Removable media auto-mount (Wayland/Thunar friendly)
+  ## Removable media support (Wayland/Thunar friendly)
   ##########################################
-  # I enable udisks2 (device management daemon) and gvfs (volume monitors)
-  # so file managers (e.g., Thunar) can see and mount devices.
-  # I also run udiskie in the user session for hands-off automounts + notifications.
-  services.udisks2.enable = true;   # system daemon for disks/partitions
-  services.gvfs.enable = true;      # desktop volume monitoring (needed by Thunar/GTK apps)
+  services.udisks2.enable = true;  # disk/partition management daemon
+  services.gvfs.enable    = true;  # desktop volume monitoring/backends
 
   ##########################################
   ## Documentation & editors
   ##########################################
-  documentation.man.enable = true;
+  documentation.man.enable = true; # manual pages
 
-  programs.nano.enable = false;
+  programs.nano.enable = false;    # keep nano out if neovim is preferred
   programs.neovim = {
-    enable = true;
-    defaultEditor = true;
+    enable        = true;          # provide nvim
+    defaultEditor = true;          # symlink EDITOR to nvim by default
   };
 }
 

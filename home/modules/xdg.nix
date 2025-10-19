@@ -1,46 +1,28 @@
 # home/modules/xdg.nix
 # =============================================================================
-# XDG (Home Manager) — my user dirs + XDG base directories
-#
-# What I want:
-# - Ensure my standard user folders (Documents, Downloads, …) exist.
-# - Keep my $HOME clean by putting config/cache/data/state under XDG paths.
-# - Optionally manage my MIME defaults in one place (commented section below).
-#
-# Notes:
-# - When I set `xdg.userDirs.createDirectories = true`, missing folders are created on switch.
-# - The XDG base dirs here are explicit so apps reliably pick them up.
+# XDG (Home Manager) — user dirs, base dirs, and MIME defaults (Dolphin/Thunar)
 # =============================================================================
-{ config, ... }:
+{ config, pkgs, ... }:
 {
   ##########################################
   ## XDG user directories (Documents, Downloads, …)
   ##########################################
   xdg.userDirs = {
-    enable = true;             # write ~/.config/user-dirs.dirs for my session
-    createDirectories = true;  # create missing directories when I activate
+    enable = true;
+    createDirectories = true;
 
-    # I can customize any path if I prefer a different structure:
+    # Examples if I ever want custom paths:
     # desktop   = "${config.home.homeDirectory}/Desktop";
     # documents = "${config.home.homeDirectory}/Docs";
     # downloads = "${config.home.homeDirectory}/DL";
     # pictures  = "${config.home.homeDirectory}/Pictures";
     # music     = "${config.home.homeDirectory}/Music";
     # videos    = "${config.home.homeDirectory}/Videos";
-
-    # Optional extras I might want:
-    # publicShare = "${config.home.homeDirectory}/Public";
-    # templates   = "${config.home.homeDirectory}/Templates";
   };
 
   ##########################################
   ## XDG base directory specification
   ##########################################
-  # I keep dotfiles and app clutter out of $HOME by using explicit XDG dirs:
-  #  - $XDG_CONFIG_HOME : where I store app configs
-  #  - $XDG_CACHE_HOME  : where apps put caches
-  #  - $XDG_DATA_HOME   : non-config application data
-  #  - $XDG_STATE_HOME  : state (logs, histories, etc.)
   xdg = {
     cacheHome  = "${config.home.homeDirectory}/.cache";
     configHome = "${config.home.homeDirectory}/.config";
@@ -49,24 +31,63 @@
   };
 
   ##########################################
-  ## (Optional) MIME defaults (file associations)
+  ## MIME defaults (file associations)
   ##########################################
-  # If I want Home Manager to manage ~/.config/mimeapps.list, I can enable this.
-  # I’ll only set defaults for apps I actually have installed to avoid broken entries.
-  #
+  # Let Home Manager manage ~/.config/mimeapps.list.
+  # Do NOT also force-write your own mimeapps.list, or KDE will see an empty chooser.
   xdg.mimeApps = {
     enable = true;
+
+    # My preferred defaults (Dolphin + SMPlayer + Firefox)
     defaultApplications = {
-  #     "text/plain"              = [ "nvim.desktop" ];                  # or "org.kde.kate.desktop"
-  #     "inode/directory"         = [ "org.gnome.Nautilus.desktop" ];    # or "thunar.desktop"
-  #     "application/pdf"         = [ "org.gnome.Evince.desktop" ];      # or "org.kde.okular.desktop"
-  #     "image/png"               = [ "imv.desktop" ];                   # or "org.gnome.Loupe.desktop"
-      "video/x-matroska"          = [ "smplayer.desktop"];
-      "video/mp4"                 = [ "smplayer.desktop" ];
-      "x-scheme-handler/http"     = [ "firefox.desktop" ];              # or "firefox.desktop"
-      "x-scheme-handler/https"    = [ "firefox.desktop" ];
+      # File manager (pick one)
+      "inode/directory" = [ "org.kde.dolphin.desktop" ]; # or: [ "thunar.desktop" ]
+
+      # Video (cover common containers)
+      "video/x-matroska" = [ "smplayer.desktop" "mpv.desktop" ];
+      "video/mp4"        = [ "smplayer.desktop" "mpv.desktop" ];
+      "video/webm"       = [ "smplayer.desktop" "mpv.desktop" ];
+      "video/x-msvideo"  = [ "smplayer.desktop" "mpv.desktop" ]; # avi
+      "video/quicktime"  = [ "smplayer.desktop" "mpv.desktop" ]; # mov
+      "video/mpeg"       = [ "smplayer.desktop" "mpv.desktop" ];
+      "video/x-ms-wmv"   = [ "smplayer.desktop" "mpv.desktop" ];
+
+      # Audio (optional)
+      "audio/mpeg"       = [ "smplayer.desktop" "mpv.desktop" ];
+      "audio/flac"       = [ "smplayer.desktop" "mpv.desktop" ];
+      "audio/x-wav"      = [ "smplayer.desktop" "mpv.desktop" ];
+      "audio/ogg"        = [ "smplayer.desktop" "mpv.desktop" ];
+
+      # Web handlers
+      "x-scheme-handler/http"  = [ "firefox.desktop" ];
+      "x-scheme-handler/https" = [ "firefox.desktop" ];
+    };
+
+    # Extra candidates shown in “Open With” (not the default)
+    associations.added = {
+      "video/x-matroska" = [ "mpv.desktop" "smplayer.desktop" ];
+      "video/mp4"        = [ "mpv.desktop" "smplayer.desktop" ];
+      "video/webm"       = [ "mpv.desktop" "smplayer.desktop" ];
+      "video/x-msvideo"  = [ "mpv.desktop" "smplayer.desktop" ];
+      "video/quicktime"  = [ "mpv.desktop" "smplayer.desktop" ];
+      "video/mpeg"       = [ "mpv.desktop" "smplayer.desktop" ];
+      "video/x-ms-wmv"   = [ "mpv.desktop" "smplayer.desktop" ];
+
+      "audio/mpeg"       = [ "mpv.desktop" "smplayer.desktop" ];
+      "audio/flac"       = [ "mpv.desktop" "smplayer.desktop" ];
+      "audio/x-wav"      = [ "mpv.desktop" "smplayer.desktop" ];
+      "audio/ogg"        = [ "mpv.desktop" "smplayer.desktop" ];
     };
   };
-  xdg.configFile."mimeapps.list".force = true;
+
+  ##########################################
+  ## IMPORTANT: do NOT force-write mimeapps.list
+  ##########################################
+  # Remove this if you had it:
+  # xdg.configFile."mimeapps.list".force = true;
+
+  ##########################################
+  ## Ensure apps (and their .desktop files) exist
+  ##########################################
 }
 

@@ -1,36 +1,49 @@
 # home/modules/stylix-targets.nix
-# -----------------------------------------------------------------------------
-# Stylix targets — I enable theming for apps/desktops I use.
-# System-wide palette/fonts come from the flake (stylix.base16Scheme etc.).
-# I import this module once in my user's home.nix.
-# -----------------------------------------------------------------------------
+# =============================================================================
+# Stylix Targets
+#
+# Description:
+#   • Enables Stylix theming for supported desktops and applications
+#   • The base color palette and fonts are defined in the flake
+#     (via stylix.base16Scheme and related settings)
+#   • Imported once in the user's home.nix
+#
+# Notes:
+#   • Ensures consistent theming across Wayland, terminal, editor, and browsers
+#   • Applies both GTK and Qt integration for graphical applications
+# =============================================================================
 { defaultUser, ... }:
+
 {
   stylix.targets = {
-    # ----- Desktop / Shell -----
-    hyprland.enable  = true;   # window manager chrome (borders, etc.)
-    hyprpaper.enable = true;   # wallpaper color integration (where supported)
-    waybar.enable    = true;   # bar colors
+    ##########################################
+    ## Desktop environment components
+    ##########################################
+    hyprland.enable  = true;  # Window manager elements (borders, layout, etc.)
+    hyprpaper.enable = true;  # Wallpaper color synchronization (where supported)
+    waybar.enable    = true;  # Panel and widget theming
+    mako.enable      = true; # Enables Stylix theming for notifications
+    ##########################################
+    ## Terminal, prompt, and editor
+    ##########################################
+    kitty.enable     = true;  # Terminal color scheme
+    starship.enable  = true;  # Shell prompt theming
+    nixvim.enable    = true;  # Neovim integration via Stylix
 
-    # ----- Terminal / Prompt / Editor -----
-    kitty.enable     = true;   # terminal theme
-    starship.enable  = true;   # shell prompt theme
-    nixvim.enable    = true;   # Neovim colors (via Stylix)
-
-    # ----- Browsers -----
+    ##########################################
+    ## Web browsers
+    ##########################################
     firefox = {
       enable = true;
-      # I theme my default Firefox profile (same as my username)
+      # Applies Stylix theme to the Firefox profile matching the username
       profileNames = [ defaultUser ];
     };
 
-    # ----- App Tookits (requested) -----
-    # GTK: applies palette to GTK 3/4 (and many apps on GNOME/Wayland)
-    gtk.enable = true;
-
-    # Qt (Qt5/Qt6): Stylix generates a Kvantum theme + qt5ct/qt6ct config
-    # so Qt apps follow the same palette.
-    qt.enable = true;
+    ##########################################
+    ## Application toolkits
+    ##########################################
+    gtk.enable = true;  # GTK 3/4 applications (GNOME and Wayland apps)
+    qt.enable  = true;  # Qt5/Qt6 apps (via Kvantum and qt5ct/qt6ct)
   };
 }
 

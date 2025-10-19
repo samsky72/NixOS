@@ -31,6 +31,8 @@
       ../../modules/thunar.nix           # I configure Thunar + plugins
       ../../modules/kdeconnect.nix
       ../../modules/kde-integration.nix
+      ../../modules/qview.nix
+      ../../modules/mako.nix
     ]
     ++ lib.optionals (hostName == "zephyrus") [
       # I keep hardware-specific monitor mappings separate per host
