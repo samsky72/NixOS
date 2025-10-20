@@ -1,62 +1,65 @@
 # modules/services.nix
 # =============================================================================
-# System Services (shared & sensible defaults)
+# System services (shared, sensible defaults)
 #
-# Goals:
-# - Secure, key-only SSH with tight server-side limits.
-# - Predictable logging (journald) with optional retention caps.
-# - Laptop-friendly power management via power-profiles-daemon + upower.
-# - Accurate time via systemd-timesyncd (lightweight NTP).
-# - GNOME Keyring for desktop secrets & SSH agent integration.
+# Provides
+#   • OpenSSH with key-only auth and conservative server limits
+#   • Journald with rate-limiting and optional retention caps
+#   • Laptop-friendly power management (power-profiles-daemon + upower)
+#   • Time sync via systemd-timesyncd (lightweight NTP)
+#   • GNOME Keyring for desktop secrets and SSH agent integration
 #
-# Notes:
-# - SSH port exposure still depends on your firewall. If you run a firewall,
-#   remember to allow TCP/22 explicitly (or change the port here and allow that).
-# - power-profiles-daemon and TLP overlap; use only one (this module picks PPD).
-# - journald defaults are fine; caps are provided as commented options below.
+# Notes
+#   • Firewall exposure is separate; open TCP/22 (or the chosen port) there.
+#   • Prefer either power-profiles-daemon or TLP (this picks PPD).
+#   • Journald defaults are typically sufficient; caps are included as comments.
 # =============================================================================
 { pkgs, lib, ... }:
 {
   ##########################################
-  ## SSH Server (secure remote access)
+  ## SSH server (hardened, key-only)
   ##########################################
   services.openssh = {
     enable = true;
 
-    # If you run a firewall module elsewhere, ensure port 22 is allowed there:
+    # Open the port in a firewall module elsewhere, e.g.:
     # networking.firewall.allowedTCPPorts = [ 22 ];
 
-    # Harden the daemon with modern, key-only authentication and conservative limits.
-    # Values map to upstream sshd_config(5) keys.
+    # sshd_config(5) options (CamelCase → native sshd keys).
     settings = {
-      # --- Access policy ---
-      PermitRootLogin          = "no";     # never allow direct root login
-      PasswordAuthentication   = false;    # enforce key-based auth only
-      KbdInteractiveAuthentication = false;# disable keyboard-interactive
-      PubkeyAuthentication     = true;     # explicit for clarity
-      PermitEmptyPasswords     = false;    # disallow empty passwords
-      MaxAuthTries             = 3;        # mitigate brute force
-      LoginGraceTime           = "30s";    # close unauthenticated sessions fast
+      # --- Access policy -------------------------------------------------------
+      PermitRootLogin            = "no";     # block direct root login
+      PasswordAuthentication     = false;    # enforce public-key auth
+      KbdInteractiveAuthentication = false;  # disable keyboard-interactive
+      PubkeyAuthentication       = true;     # explicit for clarity
+      PermitEmptyPasswords       = false;    # reject empty passwords
+      MaxAuthTries               = 3;        # reduce brute-force surface
+      LoginGraceTime             = "30s";    # close unauthenticated sessions quickly
 
-      # --- Forwarding / exposure ---
-      X11Forwarding            = false;    # disable X11 forwarding
-      AllowTcpForwarding       = "no";     # turn off local/remote TCP forwarding
-      AllowAgentForwarding     = "no";     # disallow agent forwarding
-      GatewayPorts             = "no";     # do not bind remote forwards to wildcard
+      # --- Forwarding / exposure ----------------------------------------------
+      X11Forwarding              = false;    # disable X11 forwarding
+      AllowTcpForwarding         = "no";     # disable local/remote port forwarding
+      AllowAgentForwarding       = "no";     # disable agent forwarding
+      GatewayPorts               = "no";     # do not bind remote forwards to 0.0.0.0
 
-      # --- Keepalives / idle control ---
-      ClientAliveInterval      = 120;      # probe clients every 2 minutes
-      ClientAliveCountMax      = 2;        # drop after ~4 minutes of silence
+      # --- Keep-alive / idle control ------------------------------------------
+      ClientAliveInterval        = 120;      # ping every 2 minutes
+      ClientAliveCountMax        = 2;        # drop after ~4 minutes of silence
 
-      # --- (Optional) Listen on a non-standard port to cut noise —
-      # Port = 22;
-
-      # --- (Optional) Restrict by users/groups —
-      # AllowUsers  = "samsky";
-      # AllowGroups = "sshusers";
+      # --- Optional hardening knobs (uncomment to use) -------------------------
+      # Port = 22;                          # move to a non-default port to cut noise
+      # AllowUsers  = "samsky";             # restrict to explicit users
+      # AllowGroups = "sshusers";           # or to a group
+      # UseDNS      = "no";                 # avoid reverse DNS lookups on connect
+      # Compression = "no";                 # reduce CPU use; leave "yes" on slow links
+      #
+      # Ciphers / MACs / KEX examples (match client fleet before enabling):
+      # Ciphers = "chacha20-poly1305@openssh.com,aes256-gcm@openssh.com";
+      # MACs    = "hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com";
+      # KexAlgorithms = "sntrup761x25519-sha512@openssh.com";
     };
 
-    # (Optional) host key policy:
+    # Optional: pin host key types/paths explicitly.
     # hostKeys = [
     #   { path = "/etc/ssh/ssh_host_ed25519_key"; type = "ed25519"; }
     #   { path = "/etc/ssh/ssh_host_rsa_key";     type = "rsa";     }
@@ -64,66 +67,57 @@
   };
 
   ##########################################
-  ## System Logging (journald)
+  ## System logging (journald)
   ##########################################
   services.journald = {
-    # Default storage behavior: use /var/log/journal (persistent) if it exists;
-    # otherwise keep logs in /run/log/journal (volatile).
-    storage = "auto";
-
-    # Rate-limit bursts to avoid log storms.
-    rateLimitInterval = "30s";
+    storage          = "auto";  # persistent if /var/log/journal exists, else volatile
+    rateLimitInterval = "30s";  # throttle bursts
     rateLimitBurst    = 1000;
 
-    # (Optional) Retention caps — uncomment to bound disk usage/age.
-    # SystemMaxUse     = "1G";     # hard cap for /var/log/journal usage
-    # SystemKeepFree   = "500M";   # leave this many bytes free on FS
-    # MaxFileSec       = "14day";  # rotate out files older than this
-    # MaxRetentionSec  = "30day";  # drop any entries older than this
+    # Optional retention caps (uncomment to bound usage/age):
+    # SystemMaxUse     = "1G";     # cap journal size on disk
+    # SystemKeepFree   = "500M";   # leave free space on the FS
+    # MaxFileSec       = "14day";  # rotate out older files
+    # MaxRetentionSec  = "30day";  # drop entries older than this
   };
 
   ##########################################
-  ## Power Management (Laptop-friendly)
+  ## Power management (laptop-friendly)
   ##########################################
-  # Runtime power tuning and profile switching (balanced/performance/power-saver).
-  services.power-profiles-daemon.enable = true;
+  services.power-profiles-daemon.enable = true;  # Balanced/Performance/Power Saver
+  services.upower.enable = true;                 # battery/energy stats for DE applets
 
-  # UPower surfaces battery stats and integrates with many desktops/DE applets.
-  services.upower.enable = true;
-
-  # (Optional) Logind policies for lid events / idle actions (tune per host/DE).
+  # Optional: logind policies for lid/idle (tune per host/DE).
   # services.logind = {
-  #   lidSwitch = "suspend";             # or "ignore" on docked desktop setups
-  #   lidSwitchExternalPower = "suspend";
-  #   idleAction = "suspend";            # or "ignore"
-  #   idleActionSec = "30min";
+  #   lidSwitch               = "suspend";  # e.g., "ignore" for docked desktops
+  #   lidSwitchExternalPower  = "suspend";
+  #   idleAction              = "suspend";
+  #   idleActionSec           = "30min";
   # };
 
   ##########################################
-  ## Time Synchronization (NTP)
+  ## Time synchronization (NTP)
   ##########################################
-  # Lightweight, reliable time sync via systemd-timesyncd.
   services.timesyncd = {
     enable = true;
-
-    # (Optional) Custom NTP pool if you want deterministic sources:
+    # Optional deterministic sources:
     # servers     = [ "0.pool.ntp.org" "1.pool.ntp.org" ];
     # fallbackNTP = [ "time.cloudflare.com" "time.google.com" ];
   };
 
   ##########################################
-  ## GNOME Keyring (desktop secrets & SSH)
+  ## GNOME Keyring (desktop secrets / SSH agent)
   ##########################################
-  # Provides a session keyring and can act as an SSH agent; many desktop apps expect it.
   services.gnome.gnome-keyring.enable = true;
+  # Note: Polkit is typically enabled elsewhere (e.g., portals module) for GUI auth prompts.
 
   ##########################################
-  ## (Optional) Extra hardening / quality-of-life
+  ## Optional extras (hygiene / hardening)
   ##########################################
-  # 1) Fail2ban (ban IPs with repeated auth failures; useful if SSH exposed)
+  # 1) Fail2ban — useful if SSH is exposed to the internet
   # services.fail2ban = {
-  #   enable = true;
-  #   bantime = "1h";
+  #   enable   = true;
+  #   bantime  = "1h";
   #   findtime = "10m";
   #   maxretry = 5;
   #   jails.sshd = ''
@@ -135,14 +129,14 @@
   #   '';
   # };
 
-  # 2) Avahi/mDNS (handy for discovery on LAN; leave disabled on untrusted nets)
+  # 2) Avahi/mDNS — convenient on trusted LANs, avoid on untrusted networks
   # services.avahi = {
-  #   enable = true;
-  #   nssmdns = true;     # resolve *.local hostnames
+  #   enable      = true;
+  #   nssmdns     = true;   # resolve *.local hostnames
   #   openFirewall = true;
   # };
 
-  # 3) Sysstat (iostat/mpstat for performance diagnostics)
+  # 3) Sysstat — iostat/mpstat for performance diagnostics
   # services.sysstat.enable = true;
 }
 

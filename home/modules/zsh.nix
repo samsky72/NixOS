@@ -1,21 +1,39 @@
 # home/modules/zsh.nix
-# KISS: HM-native Zsh + tools, colors unified with flake `colorScheme` (darker mapping).
+# =============================================================================
+# Zsh + Starship (theme from flake `colorScheme`, aligned with Stylix)
+#
+# Intent
+#   • Provide a fast Zsh with completion, autosuggestions, and syntax highlighting.
+#   • Render a compact, single-line Starship prompt using the Base16 palette passed
+#     in from the flake (`colorScheme.palette`). Stylix is already fed the same scheme,
+#     so everything stays in sync.
+#
+# Notes
+#   • Palette is read from `colorScheme.palette` (provided via flake `extraSpecialArgs`).
+#   • Powerline separators assume a Nerd Font is available.
+#   • Global shell aliases live in a system module to avoid duplication.
+# =============================================================================
 { config, pkgs, lib, colorScheme, ... }:
+
 let
-  # Ensure palette entries are "#RRGGBB"
+  # Ensure palette entries are "#RRGGBB".
   withHash = v: if lib.hasPrefix "#" v then v else "#${v}";
+
+  # Base16 palette (base00..base0F) from the flake.
   p = lib.mapAttrs (_: withHash) colorScheme.palette;
 
-  # Darker mapping (Tokyo Night vibes):
-  seg1 = p.base0E;  # subtle accent (purple) for the left cap/username
-  seg2 = p.base00;  # darkest bg (directory)
-  seg3 = p.base01;  # dark bg+1 (git)
-  seg4 = p.base02;  # dark bg+2 (langs/tools)
-  seg5 = p.base03;  # dim gray (docker)
-  seg6 = p.base00;  # return to darkest for the time block
+  # Segment color mapping (dark-biased).
+  seg1 = p.base0E;  # left cap / username (purple-ish accent)
+  seg2 = p.base00;  # current directory (darkest)
+  seg3 = p.base01;  # VCS section      (dark +1)
+  seg4 = p.base02;  # langs/toolchain  (dark +2)
+  seg5 = p.base03;  # misc blocks      (dim gray)
+  seg6 = p.base00;  # right-most time  (darkest again)
 in
 {
-  # Helpers that pair well with Zsh
+  ##############################################################################
+  ## Companion CLIs (high signal, low footprint)
+  ##############################################################################
   programs.fzf = {
     enable = true;
     enableZshIntegration = true;
@@ -26,7 +44,7 @@ in
 
   programs.direnv = {
     enable = true;
-    nix-direnv.enable = true;
+    nix-direnv.enable = true;  # transparent Nix shell per directory
   };
 
   programs.zoxide = {
@@ -36,13 +54,29 @@ in
 
   programs.bat.enable = true;
 
-  # Starship (powerline-style) colored from your flake theme — darker palette
+  ##############################################################################
+  ## Prompt: Starship (colors derived from flake palette)
+  ##############################################################################
   programs.starship = {
     enable = true;
     enableZshIntegration = true;
+
     settings = {
-      # Single-line format (avoids TOML backslash issues)
-      format = "[](${seg1})$os$username[](bg:${seg2} fg:${seg1})$directory[](fg:${seg2} bg:${seg3})$git_branch$git_status[](fg:${seg3} bg:${seg4})$c$elixir$elm$golang$gradle$haskell$java$julia$nodejs$nim$rust$scala[](fg:${seg4} bg:${seg5})$docker_context[](fg:${seg5} bg:${seg6})$time[ ](fg:${seg6})";
+      # Single-line prompt with powerline separators and themed segments.
+      format =
+        "[](${seg1})"
+        + "$os$username"
+        + "[](bg:${seg2} fg:${seg1})"
+        + "$directory"
+        + "[](fg:${seg2} bg:${seg3})"
+        + "$git_branch$git_status"
+        + "[](fg:${seg3} bg:${seg4})"
+        + "$c$elixir$elm$golang$gradle$haskell$java$julia$nodejs$nim$rust$scala"
+        + "[](fg:${seg4} bg:${seg5})"
+        + "$docker_context"
+        + "[](fg:${seg5} bg:${seg6})"
+        + "$time"
+        + "[ ](fg:${seg6})";
 
       username = {
         show_always = true;
@@ -81,6 +115,21 @@ in
         format = "[$all_status$ahead_behind ]($style)";
       };
 
+      # Language/tool blocks share seg4
+      c       = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
+      cpp     = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
+      elixir  = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
+      elm     = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
+      golang  = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
+      gradle  = {                    style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
+      haskell = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
+      java    = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
+      julia   = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
+      nodejs  = { symbol = "";  style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
+      nim     = { symbol = "󰆥 "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
+      rust    = { symbol = "";  style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
+      scala   = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
+
       docker_context = {
         symbol = " ";
         style = "bg:${seg5}";
@@ -89,41 +138,28 @@ in
 
       time = {
         disabled = false;
-        time_format = "%R";
+        time_format = "%R";  # 24h HH:MM
         style = "bg:${seg6}";
         format = "[ ♥ $time ]($style)";
       };
-
-      # Language/tool blocks share seg4 (still dark)
-      c       = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
-      cpp     = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
-      elixir  = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
-      elm     = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
-      golang  = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
-      gradle  = {                   style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
-      haskell = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
-      java    = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
-      julia   = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
-      nodejs  = { symbol = "";  style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
-      nim     = { symbol = "󰆥 "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
-      rust    = { symbol = "";  style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
-      scala   = { symbol = " "; style = "bg:${seg4}"; format = "[ $symbol ($version) ]($style)"; };
     };
   };
 
-  # Zsh (HM-native only; aliases live in sysenv.nix)
+  ##############################################################################
+  ## Zsh (Home Manager native)
+  ##############################################################################
   programs.zsh = {
     enable = true;
 
-    # Absolute XDG path (no deprecation warning)
+    # Absolute XDG path keeps dotfiles tidy and avoids deprecation warnings.
     dotDir = "${config.xdg.configHome}/zsh";
 
-    enableCompletion = true;
-    autosuggestion.enable = true;   # singular
-    syntaxHighlighting.enable = true;
+    enableCompletion = true;          # compinit + standard completion
+    autosuggestion.enable = true;     # inline suggestions
+    syntaxHighlighting.enable = true; # zsh-syntax-highlighting
 
-    defaultKeymap = "viins";        # "emacs" | "viins" | "vicmd"
-    autocd = true;
+    defaultKeymap = "viins";          # vi-insert by default
+    autocd = true;                    # type a directory name to cd into it
 
     history = {
       path = "${config.xdg.stateHome}/zsh/history";

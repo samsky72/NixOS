@@ -1,32 +1,39 @@
 # modules/office.nix
+# =============================================================================
+# Office suite (LibreOffice + spell/grammar tools)
+#
+# Scope
+#   • Installs LibreOffice (fresh) system-wide
+#   • Provides spell-checking via Hunspell + common dictionaries
+#   • Adds LanguageTool for grammar/style checks
+#   • Honors system GTK theme (works well with Stylix)
+#
+# Notes
+#   • Use libreoffice-still for the conservative branch if preferred.
+#   • LanguageTool is a standalone tool; LibreOffice can integrate it.
+# =============================================================================
 { pkgs, ... }:
 {
   ##########################################
-  ## Office Suite (LibreOffice + tools)
-  ##
-  ## - I install LibreOffice (fresh) system-wide.
-  ## - I add spell-checking (hunspell + common dictionaries).
-  ## - I add LanguageTool for grammar/style checks.
-  ## - LibreOffice follows my GTK theme (works well with Stylix).
+  ## Applications and dictionaries
   ##########################################
-
   environment.systemPackages = with pkgs; [
-    # Main suite (fresh = newest stable; use libreoffice-still for conservative)
-    libreoffice-fresh
+    # Office suite
+    libreoffice-fresh        # newest stable LibreOffice; switch to libreoffice-still if desired
 
-    # Spell-checking runtime + dictionaries I use
+    # Spell-checking runtime + dictionaries
     hunspell
     hunspellDicts.en_US
     hunspellDicts.ru_RU
-    # Add more if needed, e.g.:
-    # hunspellDicts.de_DE
-    # hunspellDicts.fr_FR
+    # hunspellDicts.kk_KZ   # uncomment to add Kazakh dictionary if needed
 
-    # Optional: grammar/style checker (runs standalone; LO can use it too)
+    # Grammar/style checker
     languagetool
   ];
 
-  # Optional (only if I want LO to always use GTK3 VCL explicitly):
+  ##########################################
+  ## Optional: force GTK VCL backend for LibreOffice
+  ##########################################
   # environment.variables.SAL_USE_VCL = "gtk3";
 }
 

@@ -117,6 +117,15 @@ in
     # --- USB / misc tools ---
     usbutils               # lsusb
     psmisc                 # pstree/killall/fuser
+
+    # --- Hardware inspection ---
+    pciutils            # lspci
+    dmidecode           # SMBIOS/firmware info
+
+    # --- Documentation / QoL additions ---
+    man-pages           # GNU man pages
+    man-pages-posix     # POSIX man pages
+    lesspipe            # smarter preprocessing for `less`
   ];
 
   # Make zsh and bash available as valid login shells (usable via `chsh -s`).
