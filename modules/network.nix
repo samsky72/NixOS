@@ -35,13 +35,11 @@ in
     ## /etc/hosts (static mappings)
     #########################################
     hosts = {
-      # Standard loopback entries (IPv4/IPv6). NixOS seeds these; kept explicit
-      # for clarity and to add aliases if needed.
+      # Standard loopback entries (IPv4/IPv6).
       "127.0.0.1" = [ "localhost" "localhost.localdomain" ];
       "::1"       = [ "ip6-localhost" "ip6-loopback" "localhost" ];
 
-      # Optional loopback mapping of the machine's own hostname. Helps on
-      # networks where a stable LAN IP or DNS is not guaranteed.
+      # Optional loopback mapping of the machine hostname.
       "127.0.1.1" = [ hostName ];
 
       # Examples for LAN services (uncomment and adjust as needed):
@@ -61,13 +59,11 @@ in
       allowedUDPPorts = [ ];         # keep empty; open per-service when required
 
       # KDE Connect uses dynamic per-device ports in this range (TCP + UDP).
-      # Keeping both open simplifies first-run pairing on home LANs.
       allowedTCPPortRanges = [ { from = 1714; to = 1764; } ];
       allowedUDPPortRanges = [ { from = 1714; to = 1764; } ];
     };
 
     # Optional resolver policy (disabled by default).
-    # Uncomment to pin resolvers or define a local search/domain.
     # nameservers = [ "1.1.1.1" "9.9.9.9" ];
     # search      = [ "home.arpa" ];
     # domain      = "home.arpa";
@@ -76,8 +72,6 @@ in
   #########################################
   ## Boot-time behavior
   #########################################
-  # NetworkManager’s wait-online target often slows laptops; disabling it keeps
-  # boot nimble while still letting services declare explicit network deps.
   systemd.services.NetworkManager-wait-online.enable = false;
 
   #########################################
@@ -92,7 +86,6 @@ in
   #########################################
   ## KDE Connect (GUI device pairing)
   #########################################
-  # Program enablement is sufficient when the firewall ranges above are open.
   programs.kdeconnect.enable = true;
 
   #########################################
@@ -138,12 +131,13 @@ in
     # ----- Scanners / discovery -----
     masscan              # very fast TCP scanner
     rustscan             # fast port scan + nmap handoff
-    avahi                # avahi-browse and friends
+    avahi                # avahi-browse and helpers
 
     # ----- DNS clients -----
     ldns                 # drill (modern dig alternative)
     knot-dns             # kdig (advanced client)
     dog                  # user-friendly DNS client
+    whois                # domain registry lookups
 
     # ----- HTTP(S) & web testing -----
     httpie               # ergonomic HTTP client
