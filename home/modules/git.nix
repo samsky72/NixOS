@@ -1,162 +1,105 @@
 # home/modules/git.nix
 # =============================================================================
-# Git (Home Manager) — user-level configuration with pragmatic, well-documented defaults
+# Git (Home Manager) — user-level configuration with current HM schema.
 #
-# Scope
-#   • Establishes a predictable identity derived from the flake’s `defaultUser`
-#   • Enforces linear history by default (rebase on pull) and keeps remotes tidy
-#   • Wires the `delta` pager for readable, syntax-aware diffs
-#   • Provides concise, task-oriented aliases
-#   • Uses XDG paths (e.g., global ignores under ~/.config/git/ignore)
+# Intent
+#   • Configure identity, behavior, aliases, and pager using the canonical
+#     `programs.git.settings` attribute set (no deprecated keys).
+#   • Keep a global ignore file under XDG config.
+#   • Provide delta as a pager for readable diffs.
 #
-# Design notes
-#   • Defaults aim to be safe and ergonomic across heterogeneous repos.
-#   • Merge policy is conservative: fast-forward merges only unless explicitly overridden.
-#   • Signing (GPG/SSH) is left opt-in; commented templates are provided.
-#   • Comments are impersonal to simplify reuse on multiple hosts/users.
+# Notes
+#   • Identity is sourced from the flake’s `defaultUser`.
+#   • All options below are standard git config keys; structure mirrors `git config`.
 # =============================================================================
 { config, lib, defaultUser, pkgs, ... }:
-let
-  inherit (lib) mkDefault;
-in
+
 {
   programs.git = {
-    enable = true;
+    enable = true;  # enable Git configuration under Home Manager
 
-    ##########################################
-    ## Identity (stable and declarative)
-    ##
-    ## Deriving from `defaultUser` keeps identity consistent with the flake.
-    ## Email can be overridden per host/user if necessary.
-    ##########################################
-    userName  = defaultUser;
-    userEmail = "${defaultUser}72@gmail.com";  # adjust if a different mailbox is preferred
+    # All Git configuration lives under `settings` (replaces userName/userEmail/extraConfig/aliases).
+    settings = {
+      ##########################################################################
+      ## Identity
+      ##########################################################################
+      user.name  = defaultUser;                            # author/committer name
+      user.email = "${defaultUser}72@gmail.com";           # author/committer email
 
-    ##########################################
-    ## Core behavior / ergonomics
-    ##
-    ## The goal is predictable histories, low noise, and good defaults for
-    ## diffs, paging, and line endings. Items with material UX impact include:
-    ##   - pull.rebase=true (linear history)
-    ##   - merge.ff=only    (reject implicit merge commits)
-    ##   - core.pager=delta (colorized, syntax-aware diffs)
-    ##########################################
-    extraConfig = {
-      # ----- Branch & history hygiene -----------------------------------------
-      init.defaultBranch      = "main";     # new repos use "main" instead of "master"
-      pull.rebase             = true;       # avoid implicit merge commits on pull
-      rebase.autoStash        = true;       # protect uncommitted changes during rebase
-      fetch.prune             = true;       # drop branches removed on the remote
-      fetch.pruneTags         = true;       # drop stale tags too
-      push.autoSetupRemote    = true;       # first push creates upstream tracking
-      merge.ff                = "only";     # refuse non-fast-forward merges (explicitness > convenience)
-      merge.conflictStyle     = "zdiff3";   # 3-way context with base (clearer conflict blocks; git ≥ 2.35)
+      ##########################################################################
+      ## Behavior / ergonomics
+      ##########################################################################
+      init.defaultBranch        = "main";                  # default branch for new repos
+      pull.rebase               = true;                    # rebase instead of merge on pull
+      rebase.autoStash          = true;                    # stash and re-apply local changes on rebase
+      fetch.prune               = true;                    # remove remote-tracking refs that vanished upstream
+      push.autoSetupRemote      = true;                    # first push sets upstream automatically
 
-      # ----- Editing, coloring, and paging ------------------------------------
-      core.editor             = "nvim";     # aligns with editor used elsewhere
-      color.ui                = "auto";     # enable colors when stdout is a tty
-      core.pager              = "delta";    # pipe all paged output through delta
-      interactive.diffFilter  = "delta --color-only";  # keep interactive diffs colored
+      color.ui                  = "auto";                  # colorize CLI output when appropriate
+      core.editor               = "nvim";                  # default editor invoked by git
+      core.excludesFile         = "${config.xdg.configHome}/git/ignore";  # global ignore path (declared below)
+      core.autocrlf             = "input";                 # normalize CRLF → LF on commit (leave files as-is on checkout)
 
-      # ----- Delta (diff viewer) tuning ---------------------------------------
-      # Delta renders syntax-aware and column-aligned diffs. Side-by-side can be
-      # enabled if preferred, but unified diffs remain default here for width.
-      delta.navigate          = true;       # n/p to jump between diff hunks
-      delta.line-numbers      = true;       # show line numbers in diffs
-      delta.side-by-side      = false;      # set true to enable split view diffs
-      delta.file-style        = "bold";     # emphasize file headers
-      delta.hunk-header-style = "syntax";   # syntax-highlight hunk headers
-      delta.minus-style       = "syntax #3f2d2d"; # removed lines: syntax + subtle red bg
-      delta.plus-style        = "syntax #23342a"; # added lines: syntax + subtle green bg
-      delta.zero-style        = "syntax";         # context lines
+      status.branch             = true;                    # show branch/commit info in `git status`
+      status.short              = false;                   # keep full `git status` output (not `-s` by default)
 
-      # ----- Line endings & XDG paths -----------------------------------------
-      core.autocrlf           = "input";    # store as LF; do not auto-convert on checkout
-      core.excludesFile       = "${config.xdg.configHome}/git/ignore";  # XDG global ignores
+      ##########################################################################
+      ## Delta (pager) — styled, navigable diffs
+      ##########################################################################
+      core.pager                = "delta";                 # route all paging through delta
+      interactive.diffFilter    = "delta --color-only";    # keep interactive add colored
+      delta.navigate            = true;                    # enable n/p section navigation
+      delta.line-numbers        = true;                    # show line numbers in diffs
+      delta.side-by-side        = false;                   # unified view (set true for split view)
+      delta.minus-style         = "syntax #3f2d2d";        # removed line styling (syntax + bg hint)
+      delta.plus-style          = "syntax #23342a";        # added line styling   (syntax + bg hint)
+      delta.zero-style          = "syntax";                # context lines styling
+      delta.file-style          = "bold";                  # filename header emphasis
+      delta.hunk-header-style   = "syntax";                # hunk header styling
 
-      # ----- Quality-of-life defaults -----------------------------------------
-      status.branch           = true;       # show branch + ahead/behind
-      status.short            = false;      # use full status by default
-      help.autocorrect        = 20;         # 2.0s delay before auto-correcting mistyped subcommands
-      protocol.version        = 2;          # negotiate Git protocol v2 (fewer round-trips)
-      advice.detachedHead     = false;      # reduce noise in detached HEAD workflows
+      ##########################################################################
+      ## Aliases (shortcuts)
+      ##########################################################################
+      alias = {
+        co     = "checkout";                               # change branches or restore files
+        br     = "branch -vv";                             # list branches with upstream/last commit
+        ci     = "commit";                                 # create a commit
+        st     = "status -sb";                             # concise status (short+branch)
+        df     = "diff";                                   # working tree vs index diff
+        dc     = "diff --cached";                          # index vs HEAD diff
+        lg     = "log --oneline --graph --decorate";       # compact commit graph view
+        last   = "log -1 --stat";                          # last commit with file stats
+        amend  = "commit --amend --no-edit";               # amend without changing message
+        fixup  = "commit --fixup";                         # create fixup commit for autosquash
+        squash = "rebase -i --autosquash";                 # interactive rebase with fixup/squash applied
+        rb     = "rebase";                                 # shorthand for rebase
+        rbc    = "rebase --continue";                      # continue rebase
+        rba    = "rebase --abort";                         # abort rebase
+        ps     = "push";                                   # push
+        pl     = "pull --rebase";                          # pull with rebase (explicit)
+        pr     = "!git fetch origin pull/$1/head:pr-$1 && git checkout pr-$1";  # fetch+checkout PR: `git pr 123`
+        undo   = "reset --soft HEAD~1";                    # undo last commit, keep changes staged
+        wipe   = "reset --hard";                           # hard reset working tree/index to HEAD
+      };
 
-      # ----- Performance / metadata -------------------------------------------
-      gc.writeCommitGraph     = true;       # faster history walks
-      fetch.writeCommitGraph  = true;       # keep commit-graph current on fetch
-      index.version           = 4;          # modern index format (path compression support)
-
-      # ----- Optional URL rewriting (disabled by default) ----------------------
-      # Prefer SSH when a HTTPS GitHub URL is pasted:
-      # url."ssh://git@github.com/".insteadOf = "https://github.com/";
-
-      # ----- Optional credential caching (disabled by default) -----------------
-      # In-memory cache for credentials; safer than `store` (plaintext on disk):
-      # credential.helper = "cache --timeout=7200";  # 2 hours
-
-      # ----- Optional signing (GPG or SSH) ------------------------------------
-      # Uncomment to enforce signed commits/tags. For SSH signing:
-      # signing.key  = "ssh-ed25519 AAAA..."; # or a GPG key ID like "ABCD1234"
-      # commit.gpgSign = true;                # sign all commits by default
-      # tag.gpgSign    = true;                # sign all tags by default
-      # gpg.format     = "ssh";               # use SSH keys for signing
-      # gpg.ssh.allowedSignersFile = "${config.home.homeDirectory}/.config/git/allowed_signers";
+      ##########################################################################
+      ## Optional preferences (kept commented; enable as needed)
+      ##########################################################################
+      # url."ssh://git@github.com/".insteadOf = "https://github.com/";  # prefer SSH even when pasting HTTPS
+      # credential.helper = "cache --timeout=7200";                      # in-memory credential cache (2h)
     };
 
-    ##########################################
-    ## Aliases (short, memorable helpers)
-    ##
-    ## Aliases keep common tasks terse and repeatable. Each alias is designed
-    ## to be mnemonic (two letters where possible) and safe (no destructive
-    ## defaults unless explicitly named).
-    ##########################################
-    aliases = {
-      # Status / navigation
-      st     = "status -sb";                     # concise status with branch/changes
-      br     = "branch -vv";                     # branches with upstream and last commit
-      root   = "rev-parse --show-toplevel";      # absolute path to repo root
-
-      # Diff / log
-      df     = "diff";                           # unstaged changes
-      dc     = "diff --cached";                  # staged changes
-      lg     = "log --oneline --graph --decorate";  # compact commit graph
-      last   = "log -1 --stat";                  # last commit with file stats
-
-      # Workflow
-      co     = "checkout";                       # branch/switch (legacy but still common)
-      ci     = "commit";                         # commit (message via $EDITOR)
-      amend  = "commit --amend --no-edit";       # fix metadata for the last commit
-      fixup  = "commit --fixup";                 # create a fixup commit (use with autosquash)
-      squash = "rebase -i --autosquash";         # interactive rebase w/ autosquash
-      rb     = "rebase";                         # shorthand for rebase
-      rbc    = "rebase --continue";              # continue rebase
-      rba    = "rebase --abort";                 # abort rebase
-      ps     = "push";                           # push current HEAD
-      pl     = "pull --rebase";                  # pull with rebase for linear history
-
-      # PR helper: fetch PR #N into local branch `pr-N` and check it out
-      pr     = "!f(){ git fetch origin pull/$1/head:pr-$1 && git checkout pr-$1; }; f";
-
-      # Safety / undo
-      undo   = "reset --soft HEAD~1";            # uncommit but keep changes staged
-      wipe   = "reset --hard";                   # hard reset (destructive; use with care)
-    };
-
-    ##########################################
-    ## Extensions
-    ##
-    ## LFS (Large File Storage) is enabled to avoid surprises when cloning
-    ## repositories that expect it; the setting is inert unless repos use LFS.
-    ##########################################
+    # Large File Storage (no effect unless a repo enables LFS filters).
     lfs.enable = true;
   };
 
-  ##########################################
-  ## Global ignore file (XDG-aware)
+  ##############################################################################
+  ## Global ignore file (XDG path)
   ##
-  ## Keeps common, untracked artifacts out of every repository. Use '*.bak' to
-  ## match exact suffixes only; '*.bak*' also matches 'file.txt.bak123'.
-  ##########################################
+  ## Rationale:
+  ##   Keeps common transient artifacts out of all repositories. Patterns below
+  ##   are intentionally modest; extend locally as needed.
+  ##############################################################################
   xdg.configFile."git/ignore".text = ''
     # OS / editors
     .DS_Store
@@ -168,30 +111,31 @@ in
     .direnv/
     .envrc
 
-    # Backups / temp
+    # backups / temp
     *.bak*
     *.swp
     *.swo
 
-    # Build outputs
+    # build outputs
     dist/
     build/
     out/
     node_modules/
     target/
 
-    # Logs & env
+    # logs & env
     *.log
     .env
     .env.*
   '';
 
-  ##########################################
-  ## Ensure `delta` is available on PATH
+  ##############################################################################
+  ## Helper binaries
   ##
-  ## The config above wires Git to use `delta` as the pager; installing it at
-  ## the user level guarantees availability even if the system profile omits it.
-  ##########################################
+  ## Rationale:
+  ##   `core.pager = delta` requires the delta executable on PATH. It is added
+  ##   here to ensure availability even if the system profile omits it.
+  ##############################################################################
   home.packages = [ pkgs.delta ];
 }
 
