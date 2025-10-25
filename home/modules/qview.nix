@@ -29,3 +29,4 @@
   # (Your setup already uses xdg.mimeApps via HM, so this is fine.)
 }
 
+

@@ -4,13 +4,12 @@
 #
 # Intent
 #   • Provide a fast Zsh with completion, autosuggestions, and syntax highlighting.
-#   • Render a compact, single-line Starship prompt using the Base16 palette passed
-#     in from the flake (`colorScheme.palette`). Stylix is already fed the same scheme,
-#     so everything stays in sync.
+#   • Render a compact, single-line Starship prompt using the Base16 palette from
+#     the flake (`colorScheme.palette`). Stylix uses the same scheme for consistency.
 #
 # Notes
 #   • Palette is read from `colorScheme.palette` (provided via flake `extraSpecialArgs`).
-#   • Powerline separators assume a Nerd Font is available.
+#   • “Hard” Powerline separators are used:  (left cap),  (joins),  (right cap).
 #   • Global shell aliases live in a system module to avoid duplication.
 # =============================================================================
 { config, pkgs, lib, colorScheme, ... }:
@@ -55,28 +54,31 @@ in
   programs.bat.enable = true;
 
   ##############################################################################
-  ## Prompt: Starship (colors derived from flake palette)
+  ## Prompt: Starship (colors derived from flake palette; HARD corners)
   ##############################################################################
   programs.starship = {
     enable = true;
     enableZshIntegration = true;
 
     settings = {
-      # Single-line prompt with powerline separators and themed segments.
+      # Hard separators:
+      #   • Left cap  :   (fg = next segment color)
+      #   • Joiners   :   (fg = prev seg, bg = next seg)
+      #   • Right cap :   (fg = last segment color)
       format =
-        "[](${seg1})"
+        "[](fg:${seg1})"
         + "$os$username"
-        + "[](bg:${seg2} fg:${seg1})"
+        + "[](bg:${seg2} fg:${seg1})"
         + "$directory"
-        + "[](fg:${seg2} bg:${seg3})"
+        + "[](fg:${seg2} bg:${seg3})"
         + "$git_branch$git_status"
-        + "[](fg:${seg3} bg:${seg4})"
+        + "[](fg:${seg3} bg:${seg4})"
         + "$c$elixir$elm$golang$gradle$haskell$java$julia$nodejs$nim$rust$scala"
-        + "[](fg:${seg4} bg:${seg5})"
+        + "[](fg:${seg4} bg:${seg5})"
         + "$docker_context"
-        + "[](fg:${seg5} bg:${seg6})"
+        + "[](fg:${seg5} bg:${seg6})"
         + "$time"
-        + "[ ](fg:${seg6})";
+        + "[ ](fg:${seg6})";
 
       username = {
         show_always = true;

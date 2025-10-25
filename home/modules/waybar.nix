@@ -1,16 +1,21 @@
 # home/modules/waybar.nix
 # =============================================================================
-# Waybar (Home Manager) — same size, bigger workspace icons, NEW icon set
+# Waybar (Home Manager)
 #
-# I keep the bar height the same and only change the workspace icons.
-# Current set: **NF roles** (terminal/web/files/steam).
-# Decoration for the **selected** workspace is removed (no bubble background).
+# Characteristics
+#   • Same bar height; only workspace icons are larger
+#   • No “selected bubble” decoration (active icon just changes color)
+#   • Palette sourced from flake `colorScheme` (Base16), hex-only (no alpha)
+#   • CSS avoids 8-digit hex and quoted numbers to keep GTK parser happy
 # =============================================================================
 { pkgs, lib, colorScheme, ... }:
+
 let
+  # Ensure palette entries are "#RRGGBB"
   withHash = v: if lib.hasPrefix "#" v then v else "#${v}";
   p = lib.mapAttrs (_: withHash) colorScheme.palette;
 
+  # Palette shortcuts
   bg      = p.base00;
   bg2     = p.base01;
   dim     = p.base03;
@@ -20,20 +25,21 @@ let
   blue    = p.base0D;
   purple  = p.base0E;
 
+  # Workspace icon colors
   ws_active_fg = purple;
   ws_idle_fg   = blue;
   ws_urgent_fg = red;
 
-  # Enlarge workspace icons only (bar height unchanged)
+  # Enlarge ONLY the workspace icon glyphs (bar height unchanged)
   ws_icon_px = 20;
 
-  # --- Icon presets -----------------------------------------------------------
+  # Icon presets
   icons_black_circled = { "1" = "➊"; "2" = "➋"; "3" = "➌"; "4" = "➍"; default = "●"; };
   icons_white_circled = { "1" = "①"; "2" = "②"; "3" = "③"; "4" = "④"; default = "○"; };
   icons_plain_digits  = { "1" = "1";  "2" = "2";  "3" = "3";  "4" = "4";  default = "•"; };
   icons_nf_roles      = { "1" = ""; "2" = ""; "3" = ""; "4" = ""; default = ""; };
 
-  # Active icon set:
+  # Active set
   ws_icons = icons_nf_roles;
 in
 {
@@ -46,18 +52,19 @@ in
         layer = "top";
         position = "top";
 
-        # Bar size unchanged
+        # Bar dimensions (unchanged)
         height = 42;
         margin = "10 10 0 10";
 
         modules-left   = [ "hyprland/workspaces" ];
         modules-center = [ "hyprland/window" ];
         modules-right  = [
-          "cpu" "memory" "temperature" "pulseaudio" "network" "battery" "backlight"
+          "cpu" "memory" "temperature"
+          "pulseaudio" "network" "battery" "backlight"
           "clock" "hyprland/language" "tray"
         ];
 
-        # Workspaces: same strip on both screens, icons applied
+        # Workspaces: icon-only; no bubble for active
         "hyprland/workspaces" = {
           all-outputs = true;
           format = "{icon}";
@@ -65,14 +72,8 @@ in
           on-scroll-up = "hyprctl dispatch workspace e+1";
           on-scroll-down = "hyprctl dispatch workspace e-1";
 
-          # If I want them visible even when empty:
-          # "persistent-workspaces" = { "*" = [ 1 2 3 4 ]; };
-
-          # Remove active icon override to avoid “decoration” changes
-          "format-icons" = ws_icons // {
-            urgent = "";
-            # active = "";  # ← removed to keep the same icon when selected
-          };
+          # Use chosen icon set; keep active icon same glyph (only color changes)
+          "format-icons" = ws_icons // { urgent = ""; };
         };
 
         "hyprland/window" = {
@@ -109,7 +110,10 @@ in
         battery = {
           format = "{icon} {capacity}%";
           format-charging = " {capacity}%";
-          "format-icons" = [ "󰂎" "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂀" "󰂁" "󰁹" ];
+          "format-icons" = [
+            "󰂎" "󰁺" "󰁻" "󰁼" "󰁽"
+            "󰁾" "󰁿" "󰂀" "󰂁" "󰁹"
+          ];
           states = { warning = 25; critical = 10; };
         };
 
@@ -127,10 +131,11 @@ in
       }
     ];
 
+    # GTK CSS (GTK3 syntax). No quotes on numeric values. Only 6-digit hex.
     style = ''
       * {
         font-family: JetBrainsMono Nerd Font, monospace;
-        font-size: 14px;   /* bar text size unchanged */
+        font-size: 14px;
         min-height: 0;
       }
 
@@ -143,7 +148,7 @@ in
 
       /* Larger workspace icons ONLY — bar height remains 42px */
       #workspaces button {
-        padding: 0 12px;               /* keep vertical size tight */
+        padding: 0 12px;
         color: ${ws_idle_fg};
         background: transparent;
         font-size: ${toString ws_icon_px}px;
@@ -151,11 +156,11 @@ in
 
       /* Selected workspace — no bubble/decoration */
       #workspaces button.active {
-        color: ${ws_active_fg};        /* keep a subtle color accent */
-        background: transparent;       /* remove background */
-        border-radius: 0;              /* remove rounded bubble */
-        font-weight: 500;              /* or 400 if you want zero emphasis */
-        box-shadow: none;              /* ensure no shadow glow */
+        color: ${ws_active_fg};
+        background: transparent;
+        border-radius: 0;
+        font-weight: 500;
+        box-shadow: none;
       }
 
       #workspaces button.urgent {
@@ -181,6 +186,7 @@ in
     '';
   };
 
+  # Tools Waybar modules expect (backlight, audio, sensors)
   home.packages = with pkgs; [
     brightnessctl pamixer pavucontrol iw lm_sensors
   ];
