@@ -1,92 +1,97 @@
 # modules/graphics-apps.nix
 # =============================================================================
-# Creative / Graphical Applications (system-wide)
+# Creative / Graphical Applications (system-wide, host-agnostic)
 #
 # Provides
-#   • Blender with CUDA + OptiX acceleration (for NVIDIA GPUs)
-#   • Common 2D/3D, photo, vector, DTP, video, streaming tools
-#   • Diagnostic utilities for OpenGL / Vulkan
+#   • Blender with CUDA kernels for Cycles (NVIDIA)
+#   • Raster/vector/DTP/photo/video tools
+#   • OBS Studio for capture/streaming
+#   • GL/Vulkan diagnostics
 #
-# Notes
-#   • Requires allowUnfree = true (already set) to enable OptiX in Blender.
-#   • NVIDIA drivers must be configured in host modules for GPU rendering.
-#   • No hardware assumptions; this module only installs applications.
+# Pin sensitivity
+#   • scribus-1.7.x may fail on some nixpkgs revisions; this module prefers a
+#     stable 1.6 package when present, otherwise omits Scribus (see comments).
+#   • The legacy top-level `kdenlive` alias was removed; use `kdePackages.kdenlive`.
 # =============================================================================
 { pkgs, lib, ... }:
 
 let
-  # Blender (CUDA/OptiX build) — enables GPU rendering on NVIDIA.
-  # - cudaSupport = true      → build kernels for CUDA devices
-  # - optixSupport = true     → enable NVIDIA OptiX (unfree)
-  # If an AMD/ROCm build is desired on another host, switch to:
-  #   pkgs.blender.override { hipSupport = true; }
-  blenderCuda = pkgs.blender.override {
-    cudaSupport  = true;   # compile with CUDA support (NVIDIA)
-    optixSupport = true;   # enable OptiX backend (requires allowUnfree)
-  };
+  # ----------------------------------------
+  # Blender with CUDA kernels for Cycles.
+  # - Requires proprietary NVIDIA driver elsewhere in system config for GPU render.
+  # - No optixSupport flag is used; OptiX is detected at runtime from the driver.
+  # ----------------------------------------
+  blenderCuda =
+    pkgs.blender.override {
+      cudaSupport = true;  # build CUDA kernels; remove if your pin lacks this arg
+    };
 
-  # Video editor choice (uncomment one and comment the other if a single editor
-  # is preferred). Both can be installed together; defaults to Kdenlive here.
-  videoEditor = pkgs.kdenlive;
-  # videoEditor = pkgs.shotcut;
+  # ----------------------------------------
+  # Kdenlive (Qt 6). The old top-level alias was removed; use kdePackages.
+  # ----------------------------------------
+  kdenliveQt6 = pkgs.kdePackages.kdenlive;
+
+  # ----------------------------------------
+  # Scribus selection:
+  # 1) Prefer a stable 1.6 package if the pin exposes it (e.g., scribus_1_6).
+  # 2) If `pkgs.scribus` exists AND is < 1.7, use it (older/stable).
+  # 3) Otherwise, return null (omit) — 1.7.x may fail to build on this pin.
+  # ----------------------------------------
+  scribusStableCandidate =
+    if pkgs ? scribus_1_6 then
+      pkgs.scribus_1_6
+    else if pkgs ? scribus && lib.versionOlder (pkgs.scribus.version or "0") "1.7" then
+      pkgs.scribus
+    else
+      null;
+
 in
 {
   ##########################################
   ## Applications (installed system-wide)
   ##########################################
-  environment.systemPackages = [
-    # --- 3D / DCC --------------------------------------------------------------
-    blenderCuda              # 3D creation suite with CUDA + OptiX GPU rendering
+  environment.systemPackages =
+    lib.concatLists [
+      [
+        blenderCuda        # 3D DCC; Cycles with CUDA kernels for NVIDIA GPUs
 
-    # --- 2D raster editors / painting -----------------------------------------
-    pkgs.gimp                # raster image editor (plugins may be added separately)
-    pkgs.krita               # digital painting / illustration
+        pkgs.gimp          # raster editor (layers, masks, plugins)
+        pkgs.krita         # digital painting / tablet-friendly
 
-    # --- Vector / layout / DTP -------------------------------------------------
-    pkgs.inkscape            # vector graphics (SVG authoring)
-    pkgs.scribus             # desktop publishing / page layout
+        pkgs.inkscape      # vector graphics (SVG)
+        # Scribus (DTP) — only include if a stable candidate is available:
+      ]
+      (lib.optional (scribusStableCandidate != null) scribusStableCandidate)
+      [
+        pkgs.darktable     # photography RAW workflow (non-destructive)
+        pkgs.rawtherapee   # alternative RAW developer
 
-    # --- Photography / RAW processing -----------------------------------------
-    pkgs.darktable           # photo workflow / RAW developer (non-destructive)
-    pkgs.rawtherapee         # RAW image processing (alternative toolchain)
+        kdenliveQt6        # non-linear video editor (Qt 6)
+        pkgs.obs-studio    # capture/stream; NVENC/VAAPI if drivers available
 
-    # --- Screen capture / streaming -------------------------------------------
-    pkgs.obs-studio          # streaming/recording; add plugins as needed
+        pkgs.imagemagick   # image conversion/compositing (CLI tools)
+        pkgs.ffmpeg        # A/V transcoding/filters/capture (CLI)
 
-    # --- Video editing ---------------------------------------------------------
-    videoEditor              # Kdenlive (or Shotcut if switched above)
-
-    # --- Media / conversion helpers -------------------------------------------
-    pkgs.imagemagick         # image conversions, compositing, scripting (CLI)
-    pkgs.ffmpeg              # audio/video transcoding and filters (CLI)
-
-    # --- Graphics/compute diagnostics -----------------------------------------
-    pkgs.mesa-demos          # OpenGL utilities: glxinfo, glxgears, etc.
-    pkgs.vulkan-tools        # Vulkan utilities: vulkaninfo, etc.
-  ];
+        pkgs.mesa-demos    # OpenGL diagnostics (glxinfo, glxgears)
+        pkgs.vulkan-tools  # Vulkan diagnostics (vulkaninfo)
+      ]
+    ];
 
   ##########################################
-  ## Optional hints (kept as comments)
+  ## Optional guidance (kept as comments)
   ##########################################
-  # • Blender add-ons:
-  #     Nixpkgs does not bundle most third-party add-ons. Install add-ons
-  #     per-user in Blender preferences or vendor them in a custom wrapper.
+  # • If Scribus is omitted (null above) due to a failing 1.7.x on this pin:
+  #     # Enable Flatpak once system-wide (in a system module):
+  #     #   services.flatpak.enable = true;
+  #     # Then install the upstream Scribus Flatpak:
+  #     #   flatpak install flathub net.scribus.Scribus
   #
-  # • NVIDIA specifics:
-  #     Ensure the NVIDIA driver is enabled in the host (e.g., videoDrivers = [ "nvidia" ]).
-  #     For OptiX, allowUnfree must be true (already set in nixpkgs.config).
+  # • OBS hardware encoders:
+  #     NVENC/VAAPI availability depends on GPU driver + userspace configured
+  #     in hardware.graphics / hardware.opengl modules.
   #
-  # • AMD specifics:
-  #     On AMD/ROCm hosts, prefer:
-  #       blenderHip = pkgs.blender.override { hipSupport = true; };
-  #     and replace `blenderCuda` above with `blenderHip`.
-  #
-  # • OBS Studio sources/encoders:
-  #     Add plugins (browser source, VAAPI/NVENC) as needed. Most are included;
-  #     hardware encoders depend on the GPU driver/runtime configuration.
-  #
-  # • GIMP plugins:
-  #     Plugin sets vary by nixpkgs revision. If a with-plugins build is desired,
-  #     consider a `gimp-with-plugins` wrapper in a separate module/pin.
+  # • AMD/ROCm hosts (alternative Blender build if your pin supports it):
+  #     let blenderHip = pkgs.blender.override { hipSupport = true; };
+  #     in replace `blenderCuda` with `blenderHip`.
 }
 
