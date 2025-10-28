@@ -1,107 +1,112 @@
-# modules/multimedia.nix
+# modules/entertainment.nix
 # =============================================================================
-# Multimedia stack (PipeWire / codecs / players)
+# Entertainment stack (system level)
 #
-# Scope
-#   • Enables PipeWire with PulseAudio and JACK compatibility
-#   • Installs common A/V tools, codecs, and players
-#   • Provides Wayland-friendly defaults
+# Purpose
+#   • Provide common media applications without touching user configs.
+#   • Keep SVP optional because the NUR recipe currently points at a dead URL
+#     (404 on svp-team.com) and will fail builds until the recipe is updated.
 #
 # Characteristics
-#   • Host-agnostic; vendor specifics are left optional
-#   • Uses WirePlumber as the PipeWire session manager
+#   • Host-agnostic, safe defaults.
+#   • No VLC (per request); uses mpv + helpers instead.
+#   • Spotify included (unfree).
 # =============================================================================
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
+let
+  ##############################################################################
+  ## Switches (build-safe toggles)
+  ##############################################################################
+  # Gate SVP to avoid breaking builds while upstream/NUR URLs churn.
+  # Set to true once your NUR pin contains a working SVP recipe.
+  enableSVP = false;
+
+  ##############################################################################
+  ## NUR lookups (guarded)
+  ##############################################################################
+  # Defensive helpers: only try to reference NUR if it exists in your overlay.
+  hasNUR = pkgs ? nur && builtins.typeOf pkgs.nur == "set";
+
+  # Attempt to resolve SVP package from xddxdd’s NUR repo:
+  #   • "svp"      — the manager/GUI
+  #   • "svp-mpv"  — mpv with SVP scripts baked in (packaged there)
+  svpPkg =
+    if hasNUR && lib.hasAttrByPath [ "repos" "xddxdd" "svp" ] pkgs.nur
+    then lib.getAttrFromPath [ "repos" "xddxdd" "svp" ] pkgs.nur
+    else null;
+
+  svpMpvPkg =
+    if hasNUR && lib.hasAttrByPath [ "repos" "xddxdd" "svp-mpv" ] pkgs.nur
+    then lib.getAttrFromPath [ "repos" "xddxdd" "svp-mpv" ] pkgs.nur
+    else null;
+
+in
 {
-  ##########################################
-  ## Audio: PipeWire + WirePlumber
-  ##########################################
-  services.pipewire = {
-    enable = true;              # PipeWire core
-    wireplumber.enable = true;  # session manager
+  ##############################################################################
+  ## Applications (system-wide)
+  ##############################################################################
+  environment.systemPackages =
+    with pkgs; [
+      # --- Players / libraries -------------------------------------------------
+      mpv                # main media player (no system-level config here)
+      # jellyfin-media-player # Jellyfin desktop player (optional streaming client)
 
-    alsa.enable = true;         # ALSA compatibility
-    alsa.support32Bit = true;   # 32-bit ALSA for legacy/Steam titles
-    pulse.enable = true;        # PulseAudio server shim
-    jack.enable = true;         # JACK shim for pro-audio apps
-  };
+      # --- Streaming / online -------------------------------------------------
+      spotify            # Spotify desktop client (unfree)
 
-  # Disable the legacy PulseAudio daemon (renamed option).
-  services.pulseaudio.enable = false;
+      # --- Tools / utilities --------------------------------------------------
+      yt-dlp             # video downloader (YouTube, etc.)
+      ffmpeg             # A/V swiss army knife (convert, probe, concat)
+      kid3               # audio tag editor (MP3/FLAC/…)
+      losslesscut-bin    # lossless video/audio cutter (GUI, binary build)
+      obs-studio         # recording/streaming (desktop capture, camera)
+    ]
+    # --- Optional: SVP from NUR (disabled by default) -------------------------
+    ++ lib.optionals (enableSVP && svpPkg != null)     [ svpPkg ]
+    ++ lib.optionals (enableSVP && svpMpvPkg != null)  [ svpMpvPkg ];
 
-  # Real-time scheduling for low-latency audio.
-  security.rtkit.enable = true;
-
-  ##########################################
-  ## Video & codecs + players/tools
-  ##########################################
-  environment.systemPackages = with pkgs; [
-    # Core playback / editors
-    mpv                 # hw-accelerated media player
-    smplayer            # Qt frontend for mpv
-    strawberry          # music player / library manager
-    audacity            # audio editor
-
-    # Streaming / download utilities
-    ffmpeg
-    yt-dlp
-
-    # GStreamer stack (widely used by desktop apps)
-    gst_all_1.gstreamer
-    gst_all_1.gst-plugins-base
-    gst_all_1.gst-plugins-good
-    gst_all_1.gst-plugins-bad
-    gst_all_1.gst-plugins-ugly
-    gst_all_1.gst-libav
-
-    # HW acceleration / camera utils
-    libva-utils         # VA-API tooling (vainfo)
-    v4l-utils           # webcam utilities
-
-    # Audio utilities / mixers
-    alsa-utils          # alsamixer, aplay, arecord
-    pavucontrol         # PipeWire/Pulse mixer GUI
-
-    # Players (unfree example; requires allowUnfree elsewhere)
-    spotify
-  ];
-
-  ##########################################
-  ## Graphics helpers (optional, vendor-specific)
-  ##########################################
-  # For NVIDIA VDPAU/VA-API interop, consider:
-  # hardware.graphics.extraPackages = with pkgs; [ vaapiVdpau libvdpau-va-gl ];
-  # Ensure the correct driver is enabled in the host GPU module.
-
-  ##########################################
-  ## Wayland-friendly defaults
-  ##########################################
-  environment.sessionVariables = {
-    SDL_VIDEODRIVER = "wayland";  # prefer SDL Wayland backend
-    QT_QPA_PLATFORM = "wayland";  # prefer Qt Wayland backend
-    NIXOS_OZONE_WL  = "1";        # enable Wayland in Chromium/Electron
-  };
-
-  ##########################################
-  ## Fonts (icons in prompts/players)
-  ##########################################
-  fonts = {
-    fontconfig.enable = true;
-    packages = with pkgs; [
-      nerd-fonts.jetbrains-mono  # Nerd Font for glyph/icon support
-    ];
-  };
-
-  ##########################################
-  ## Notes (optional features)
-  ##########################################
-  # • Pro-audio: for ultra-low latency, consider CPU governor/IRQ tuning.
-  # • Browser DRM (Widevine):
-  #     Firefox: enable DRM in about:preferences (downloads Widevine).
-  #     Chrome: bundles Widevine; ungoogled-chromium does not.
-  # • Virtual camera (OBS → Zoom, etc.):
-  #     boot.kernelModules = [ "v4l2loopback" ];
-  #     boot.extraModulePackages = [ pkgs.linuxPackages.v4l2loopback ];
+  ##############################################################################
+  ## Notes / guidance
+  ##############################################################################
+  # SVP (SmoothVideo Project):
+  #   • The NUR package (xddxdd.svp @ 4.6.263) fetches a tarball that upstream
+  #     removed, causing a 404 at build time. That’s why enableSVP = false here.
+  #   • To try SVP, set enableSVP = true, rebuild, and if it fails, either:
+  #       1) Update your NUR input to a commit where the recipe is fixed, or
+  #       2) Locally override the package with the current SVP Linux URL/SHA256.
+  #
+  #   Example override (put in your flake or a small overlay):
+  #     nixpkgs.overlays = [
+  #       (final: prev: {
+  #         nur = prev.nur // {
+  #           repos = prev.nur.repos // {
+  #             xddxdd = prev.nur.repos.xddxdd // {
+  #               svp = prev.nur.repos.xddxdd.svp.overrideAttrs (_: {
+  #                 # Replace with the current URL and fixed-output hash:
+  #                 src = prev.fetchurl {
+  #                   url = "https://www.svp-team.com/files/svp4-linux.<NEWVER>.tar.bz2";
+  #                   sha256 = "<fill-me>";
+  #                 };
+  #               });
+  #             };
+  #           };
+  #         };
+  #       })
+  #     ];
+  #
+  # mpv:
+  #   • No system-side config here (you asked to avoid it). Keep any tuning
+  #     (scripts, profiles, hwdec) in your Home Manager module.
+  #
+  # Spotify:
+  #   • Requires allowUnfree = true in your nixpkgs config (you already set this).
+  #
+  # OBS:
+  #   • For Wayland capture, `obs-studio` detects PipeWire automatically on NixOS
+  #     when `services.pipewire` is enabled (you already have it).
 }
+
+
+
 
