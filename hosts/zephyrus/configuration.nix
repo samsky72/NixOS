@@ -47,6 +47,9 @@
     # ../../modules/bluetooth.nix          # BlueZ + Blueman
     # ../../modules/devtools.nix           # direnv + nix-direnv
     # ../../modules/printing-scanning.nix  # CUPS, ipp-usb, SANE
+    
+    # Graphics applications
+    ../../modules/graphics-apps.nix
   ];
 
   ##########################################
