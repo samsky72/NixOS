@@ -1,60 +1,73 @@
 # modules/virtualization.nix
 # =============================================================================
-# Virtualization: QEMU/KVM + libvirt (+ optional containers)
+# Virtualization: libvirt/QEMU/KVM + VirtualBox (+ optional containers)
 #
 # Provides
-#   • libvirtd with QEMU/KVM, vTPM (swtpm), virtio-fs (virtiofsd)
-#   • virt-manager GUI
-#   • Optional Docker OR Podman (not both)
+#   • libvirt daemon with QEMU/KVM, swtpm (vTPM) and virtio-fs (virtiofsd)
+#   • virt-manager (GUI for libvirt) pre-enabled
+#   • VirtualBox host stack (kernel module + GUI), with optional ExtPack
+#   • Optional containers: choose Docker OR Podman (not both)
 #
 # Notes
-#   • OVMF (UEFI firmware) is available with QEMU in modern nixpkgs; no extra toggle.
-#   • libvirt manages its own dnsmasq instance; installing dnsmasq globally is not required.
-#   • Choose exactly one container engine; enabling both causes confusion/port clashes.
+#   • OVMF (UEFI firmware) ships with modern QEMU packages; no extra toggle.
+#   • libvirt runs its own dnsmasq; a global dnsmasq install is unnecessary.
+#   • VirtualBox requires membership in group `vboxusers` for USB/VRDE features.
+#   • Only one container engine should be enabled to avoid conflicts.
 # =============================================================================
 { pkgs, lib, defaultUser, ... }:
 
 let
-  # --- Container engine selection --------------------------------------------
-  # Set exactly one of these to true:
-  useDocker = true;     # classic Docker engine
-  usePodman = false;    # rootless Podman (can emulate `docker` CLI)
+  # -----------------------------------------------------------------------------
+  # Container engine selection (exactly one should be true)
+  # -----------------------------------------------------------------------------
+  useDocker = true;   # classic Docker engine (rootful by default on NixOS)
+  usePodman = false;  # rootless Podman; provides a Docker-compatible CLI if enabled
 in
 {
   ##########################################
-  ## QEMU/KVM + libvirt
+  ## libvirt + QEMU/KVM hypervisor
   ##########################################
   virtualisation.libvirtd = {
-    enable = true;
-    onBoot = "start";       # start libvirtd at boot
-    onShutdown = "shutdown";
+    enable = true;                 # enable libvirtd system service
+    onBoot = "start";              # start at boot
+    onShutdown = "shutdown";       # stop gracefully at shutdown
 
     qemu = {
-      package = pkgs.qemu_kvm;  # QEMU with KVM acceleration
-
-      # vTPM: required for Win11, BitLocker, etc.
-      swtpm.enable = true;
-
-      # virtiofsd is provided via systemPackages below for host<->guest shared folders
-      # OVMF (UEFI) comes with QEMU in modern nixpkgs; no explicit option needed.
+      package = pkgs.qemu_kvm;     # QEMU with KVM acceleration enabled
+      swtpm.enable = true;         # software TPM (vTPM) for Win11/BitLocker, etc.
+      # virtiofsd is provided via systemPackages (below) for host/guest file sharing
+      # OVMF (UEFI) firmware is shipped with QEMU in modern nixpkgs; no toggle here
     };
   };
 
   ##########################################
-  ## UI & helpers
+  ## VirtualBox host stack
   ##########################################
-  programs.virt-manager.enable = true;  # virt-manager GUI
+  virtualisation.virtualbox.host = {
+    enable = true;                 # build and load VirtualBox host kernel module + GUI
+    addNetworkInterface = true;    # create/manage vboxnet0 host-only interface
+    # enableExtensionPack pulls Oracle's proprietary ExtPack:
+    #   - Adds VRDE, USB 2/3, NVMe, PXE ROMs, etc.
+    #   - Requires nixpkgs.config.allowUnfree = true (already set in nix.nix)
+    enableExtensionPack = false;   # flip to true if the proprietary features are required
+    # enableHardening remains at the upstream default (true) for security; left implicit
+  };
 
-  # Make tools available system-wide; libvirt will spawn its own dnsmasq.
+  ##########################################
+  ## GUI tooling and host helpers
+  ##########################################
+  programs.virt-manager.enable = true;  # virt-manager GUI for libvirt-based VMs
+
+  # Make useful runtime tools available system-wide.
   environment.systemPackages = with pkgs; [
-    virt-viewer          # remote viewer
-    spice-gtk            # SPICE client libs
-    usbredir             # USB redirection helpers
-    virtiofsd            # virtio-fs daemon for host/guest sharing
-    bridge-utils         # (optional) for host-defined linux bridges
+    virt-viewer    # SPICE/VNC viewer for libvirt guests
+    spice-gtk      # SPICE client libraries for clipboard/USB redirection
+    usbredir       # helper for SPICE USB redirection
+    virtiofsd      # virtio-fs daemon for shared folders between host and guest
+    bridge-utils   # brctl helpers, useful for custom libvirt bridges
   ];
 
-  # Quality-of-life: let virt-manager auto-connect to system libvirt.
+  # Default libvirt connection for GUI tools (virt-manager/virt-viewer).
   environment.sessionVariables.LIBVIRT_DEFAULT_URI = "qemu:///system";
 
   ##########################################
@@ -63,43 +76,47 @@ in
   # A) Docker
   virtualisation.docker.enable = useDocker;
 
-  # B) Podman
+  # B) Podman (rootless by default on NixOS)
   virtualisation.podman = lib.mkIf usePodman {
-    enable = true;
-    dockerCompat = true;            # provides a `docker` shim for CLI muscle memory
-    defaultNetwork.settings.dns_enabled = true;
+    enable = true;                          # enable podman service(s)
+    dockerCompat = true;                    # provide `docker` shim that maps to podman
+    defaultNetwork.settings.dns_enabled = true;  # enable DNS in the default CNI network
   };
 
-  # Safety net: if both are toggled, prefer Docker and disable Podman.
+  # Ensure exactly one container engine is selected.
   assertions = [
     {
       assertion = !(useDocker && usePodman);
-      message   = "Enable either Docker OR Podman — not both.";
+      message = "Enable either Docker OR Podman — not both.";
     }
   ];
 
   ##########################################
-  ## User group membership
+  ## User group membership (runtime access)
   ##########################################
-  users.users.${defaultUser}.extraGroups = lib.mkAfter
-    ([ "kvm" "libvirtd" ] ++ lib.optionals useDocker [ "docker" ]);
+  users.users.${defaultUser}.extraGroups = lib.mkAfter (
+    # libvirt/KVM groups are needed to access /dev/kvm and talk to libvirtd
+    [ "kvm" "libvirtd" "vboxusers" ]    # vboxusers for VirtualBox USB/VRDE
+    # add docker group only when Docker is enabled
+    ++ lib.optionals useDocker [ "docker" ]
+  );
 
   ##########################################
-  ## Optional kernel tuning (harmless if present)
+  ## Kernel modules and nested virtualization
   ##########################################
-  # Modules commonly used with KVM guests and virtio networking.
+  # Common KVM and virtio acceleration modules (safe if present).
   boot.kernelModules = [
-    "kvm" "kvm-intel" "kvm-amd"
-    "vhost_vsock" "vhost_net"
+    "kvm" "kvm-intel" "kvm-amd"  # vendor KVM modules; the irrelevant one stays inactive
+    "vhost_vsock" "vhost_net"    # virtio acceleration for vsock/net
   ];
 
-  # Nested virtualization (only takes effect on the relevant CPU vendor).
+  # Allow running hypervisors inside VMs (nested virtualization) when supported.
   boot.extraModprobeConfig = ''
     options kvm_intel nested=1
     options kvm_amd   nested=1
   '';
 
-  # Optional: IOMMU (PCI passthrough). Leave commented unless needed.
+  # Optional: IOMMU for PCI passthrough (leave commented unless needed).
   # boot.kernelParams = [
   #   "amd_iommu=on" "intel_iommu=on" "iommu=pt"
   # ];
