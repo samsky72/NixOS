@@ -23,38 +23,28 @@ in
   ## Time, locale, and keyboard (from flake)
   ##########################################
 
-  # Time zone (can be overridden per host if required).
-  time.timeZone = mkDefault locale.timeZone;
+  time.timeZone = mkDefault locale.timeZone;          # system time zone
 
-  # Default locale and the set of locales glibc should generate.
-  # Keeping this list lean speeds up activations.
-  i18n.defaultLocale    = mkDefault locale.defaultLocale;
-  i18n.supportedLocales = mkDefault locale.supportedLocales;
+  i18n.defaultLocale    = mkDefault locale.defaultLocale;  # default locale
+  i18n.supportedLocales = mkDefault locale.supportedLocales; # generated locales
 
-  # Make virtual terminals (Linux console) follow XKB settings.
-  console.useXkbConfig = true;
+  console.useXkbConfig = true;                        # console follows XKB
 
-  # XKB defaults for X11 and Wayland-aware compositors (model/variant optional).
   services.xserver.xkb = {
-    inherit (locale.xkb) layout options; # e.g., "us,ru" and "grp:win_space_toggle"
-    # inherit (locale.xkb) model variant; # uncomment if provided in flake
+    inherit (locale.xkb) layout options;              # keyboard layouts/options
+    # inherit (locale.xkb) model variant;             # optional model/variant
   };
 
-  # Export XKB defaults via environment for tools that read XKB_* vars.
   environment.sessionVariables = {
-    XKB_DEFAULT_LAYOUT  = locale.xkb.layout;   # default keyboard layout(s)
-    XKB_DEFAULT_OPTIONS = locale.xkb.options;  # default XKB options
-    # XKB_DEFAULT_MODEL   = locale.xkb.model or "";
-    # XKB_DEFAULT_VARIANT = locale.xkb.variant or "";
+    XKB_DEFAULT_LAYOUT  = locale.xkb.layout;          # exported default layouts
+    XKB_DEFAULT_OPTIONS = locale.xkb.options;         # exported XKB options
   };
 
   ##########################################
   ## System-wide CLI toolset
   ##########################################
-  # Curated baseline: shells, archives, diagnostics, monitors, and helpers.
-  # Each entry includes a short purpose note for quick recall.
   environment.systemPackages = with pkgs; [
-    # --- Shells & basics ---
+    # --- Shells & basics ------------------------------------------------------
     bashInteractive        # interactive bash for login/shell switching
     zsh                    # alternative interactive shell
     coreutils              # GNU core utilities
@@ -65,30 +55,31 @@ in
 
     gcc                    # system C toolchain (headers/compilers)
 
-    # --- TUI file manager ---
+    # --- TUI file manager -----------------------------------------------------
     mc                     # Midnight Commander
 
-    # --- Archive / compression ---
+    # --- Archive / compression -----------------------------------------------
     zip unzip              # zip archives
     xz                     # xz compression
-    p7zip                  # 7z/7zip formats
+    p7zip                  # 7z/7zip formats (can also extract ISO images)
     zstd                   # zstd compression
     gzip bzip2             # gzip/bzip2 formats
     lz4 lzip lrzip         # extra compressors
-    libarchive             # bsdtar and archive libs
+    libarchive             # bsdtar and archive libs (bsdtar extracts .iso)
+
     cabextract             # Microsoft CAB files
     unar                   # universal archive extractor
     unrar                  # RAR extractor (non-free)
 
-    # --- Networking & diagnostics ---
+    # --- Networking & diagnostics --------------------------------------------
     curl wget              # HTTP(S) clients
     git                    # VCS client
     iproute2 iputils       # ip/ss + ping/tracepath
     traceroute             # classic traceroute
     dnsutils               # dig/nslookup
-    nmap                   # scanner + ncat
+    nmap                   # scanner (ncat included)
 
-    # --- Filesystem / process / monitoring ---
+    # --- Filesystem / process / monitoring -----------------------------------
     eza                    # modern ls
     tree                   # directory tree
     ripgrep                # fast grep
@@ -101,52 +92,59 @@ in
     ncdu                   # interactive disk usage
     rsync                  # file synchronization
 
-    # --- Data wrangling ---
+    # --- Data wrangling -------------------------------------------------------
     jq                     # JSON processor
     yq-go                  # YAML processor (Go-based)
 
-    # --- Misc ---
+    # --- Misc -----------------------------------------------------------------
     file                   # file type detection
     which                  # command resolver
     tokei                  # code statistics
 
-    # --- Removable media helpers ---
-    udiskie                # user-space automounter
+    # --- Removable media helpers ---------------------------------------------
+    udiskie                # user-space automounter (CLI)
     udevil                 # lightweight mount helpers
 
-    # --- USB / misc tools ---
+    # --- USB / misc tools -----------------------------------------------------
     usbutils               # lsusb
     psmisc                 # pstree/killall/fuser
 
-    # --- Hardware inspection ---
-    pciutils            # lspci
-    dmidecode           # SMBIOS/firmware info
+    # --- Hardware inspection --------------------------------------------------
+    pciutils               # lspci
+    dmidecode              # SMBIOS/firmware info
 
-    # --- Documentation / QoL additions ---
-    man-pages           # GNU man pages
-    man-pages-posix     # POSIX man pages
-    lesspipe            # smarter preprocessing for `less`
+    # --- Documentation / QoL additions ---------------------------------------
+    man-pages              # GNU man pages
+    man-pages-posix        # POSIX man pages
+    lesspipe               # smarter preprocessing for `less`
+
+    # --- ISO / optical images -------------------------------------------------
+    xorriso                # create/modify ISO; xorrisofs acts like mkisofs
+    cdrtools               # mkisofs/cdrecord/isoinfo/isovfy suite
+    fuseiso                # FUSE mount ISO images without root (user-space)
+    squashfsTools          # unsquashfs/mksquashfs for live ISO root filesystems
+    syslinux               # isohybrid to make BIOS/UEFI-hybrid bootable ISOs
+    udftools               # UDF mkfs/fsck (DVD/BD filesystems)
+    dmg2img                # convert Apple DMG → raw/ISO
   ];
 
-  # Make zsh and bash available as valid login shells (usable via `chsh -s`).
+  # Shells available for `chsh -s`.
   environment.shells = with pkgs; [ zsh bashInteractive ];
 
-  # Enable system-level Zsh integration (completions, etc.); user-specific setup
-  # is typically handled in Home Manager.
+  # System-level Zsh integration (completions, etc.).
   programs.zsh.enable = true;
 
   ##########################################
   ## Sensible environment variables
   ##########################################
-  # Defaults suitable for both TTY and GUI sessions. mkDefault allows overrides.
   environment.variables = {
-    EDITOR         = mkDefault "nvim";                     # default editor
-    VISUAL         = mkDefault "nvim";                     # default GUI editor
-    PAGER          = mkDefault "less";                     # pager
+    EDITOR         = mkDefault "nvim";                 # default editor
+    VISUAL         = mkDefault "nvim";                 # default GUI editor
+    PAGER          = mkDefault "less";                 # pager
     LESS           = mkDefault "-R --use-color -M --long-prompt --ignore-case"; # sane less flags
-    LESSHISTFILE   = mkDefault "-";                        # disable less history file
-    NIXOS_OZONE_WL = mkDefault "1";                        # Wayland for Chromium/Electron
-    LANG           = mkDefault locale.defaultLocale;       # ensure LANG matches defaultLocale
+    LESSHISTFILE   = mkDefault "-";                    # disable less history file
+    NIXOS_OZONE_WL = mkDefault "1";                    # Wayland for Chromium/Electron
+    LANG           = mkDefault locale.defaultLocale;   # ensure LANG matches defaultLocale
   };
 
   ##########################################
@@ -208,12 +206,68 @@ in
   ##########################################
   ## Unified init for interactive shells
   ##########################################
-  # Executes for bash, zsh, etc. on interactive startup.
-  # Automatically cd into ~/NixOS if present; disable via NO_AUTO_CD_NIXOS=1.
   environment.interactiveShellInit = mkAfter ''
+    # Auto-cd into ~/NixOS if present; set NO_AUTO_CD_NIXOS=1 to disable.
     if [ -z "''${NO_AUTO_CD_NIXOS-}" ] && [ -d "$HOME/NixOS" ]; then
       cd "$HOME/NixOS"
     fi
+
+    # --------------------------------------------------------------------------
+    # ISO helpers (xorriso/fuseiso) — user-space friendly
+    # --------------------------------------------------------------------------
+
+    # mkiso LABEL SRC_DIR OUT.iso
+    # Creates a Rock Ridge + Joliet ISO using xorriso (mkisofs compatible).
+    mkiso() {
+      if [ $# -ne 3 ]; then
+        echo "usage: mkiso LABEL SRC_DIR OUT.iso" >&2
+        return 2
+      fi
+      local label="''$1" src="''$2" out="''$3"
+      if [ ! -d "''$src" ]; then
+        echo "mkiso: source directory not found: ''$src" >&2
+        return 2
+      fi
+      xorriso -as mkisofs \
+        -r -J -V "''$label" \
+        -o "''$out" \
+        "''$src"
+    }
+
+    # iso-hybrid IN.iso
+    # Marks an ISO as BIOS/UEFI hybrid using syslinux isohybrid (when applicable).
+    iso-hybrid() {
+      if [ $# -ne 1 ]; then
+        echo "usage: iso-hybrid IN.iso" >&2
+        return 2
+      fi
+      isohybrid "''$1" || {
+        echo "iso-hybrid: isohybrid failed (image may already be hybrid or unsupported)" >&2
+        return 1
+      }
+    }
+
+    # iso-mount IN.iso [MOUNTPOINT]
+    # Mounts an ISO at a user-writable mountpoint via FUSE (no root).
+    iso-mount() {
+      if [ $# -lt 1 ] || [ $# -gt 2 ]; then
+        echo "usage: iso-mount IN.iso [MOUNTPOINT]" >&2
+        return 2
+      fi
+      local iso="''$1"
+      local mnt="''${2:-$HOME/mnt/iso}"
+      mkdir -p "''$mnt"
+      fuseiso -n "''$iso" "''$mnt"
+      echo "mounted: ''$iso -> ''$mnt"
+    }
+
+    # iso-umount [MOUNTPOINT]
+    # Unmounts a FUSE-mounted ISO from the given mountpoint (default: ~/mnt/iso).
+    iso-umount() {
+      local mnt="''${1:-$HOME/mnt/iso}"
+      fusermount -u "''$mnt" 2>/dev/null || umount "''$mnt"
+      echo "unmounted: ''$mnt"
+    }
   '';
 
   ##########################################
@@ -221,7 +275,6 @@ in
   ##########################################
   environment.pathsToLink = [ "/share/zsh" ];  # expose system zsh completions
 
-  # Lightweight PATH prepend for /usr/local/bin if it exists.
   environment.etc."profile.d/10-local-path.sh".text = ''
     if [ -d /usr/local/bin ]; then
       export PATH="/usr/local/bin:$PATH"
@@ -239,7 +292,7 @@ in
   ##########################################
   documentation.man.enable = true; # manual pages
 
-  programs.nano.enable = false;    # keep nano out if neovim is preferred
+  programs.nano.enable = false;    # prefer Neovim as default editor
   programs.neovim = {
     enable        = true;          # provide nvim
     defaultEditor = true;          # symlink EDITOR to nvim by default
