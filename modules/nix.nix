@@ -26,8 +26,8 @@
 
       # --- Performance & scheduling -------------------------------------------
       auto-optimise-store = true;
-      cores    = 0;           # 0 = use all CPU cores
-      max-jobs = "auto";      # parallel builds
+      cores    = 16;           # 0 = use all CPU cores
+      max-jobs = 4;      # parallel builds
 
       # --- Debug / reproducibility --------------------------------------------
       keep-outputs     = true;
